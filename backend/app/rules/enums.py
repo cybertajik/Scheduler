@@ -1,0 +1,27 @@
+import enum
+
+class RuleCategory(str, enum.Enum):
+    HARD = "HARD"
+    SOFT = "SOFT"
+
+class RuleType(str, enum.Enum):
+    VACATION = "VACATION"
+    UNAVAILABLE_DATE = "UNAVAILABLE_DATE"
+    UNAVAILABLE_RANGE = "UNAVAILABLE_RANGE"
+    NO_WEEKENDS = "NO_WEEKENDS"
+    NO_NIGHTS = "NO_NIGHTS"
+    NO_SHIFT_TYPE = "NO_SHIFT_TYPE"
+    MAX_CONSECUTIVE_DAYS = "MAX_CONSECUTIVE_DAYS"
+    MIN_REST_HOURS = "MIN_REST_HOURS"
+    PREFERRED_DAYS_OFF = "PREFERRED_DAYS_OFF"
+    PREFERRED_SHIFTS = "PREFERRED_SHIFTS"
+    NO_POST_NIGHT_SHIFT = "NO_POST_NIGHT_SHIFT"
+    SKILL_REQUIREMENT = "SKILL_REQUIREMENT"
+    DEPARTMENT_LIMITATION = "DEPARTMENT_LIMITATION"
+    HOLIDAY_RESTRICTION = "HOLIDAY_RESTRICTION"
+    CUSTOM_JSON = "CUSTOM_JSON"
+
+class ConflictSeverity(str, enum.Enum):
+    CRITICAL = "CRITICAL"  # Blocks assignment / Infeasible schedule
+    WARNING = "WARNING"    # Soft constraint penalty
+    INFO = "INFO"       # Informational notice
