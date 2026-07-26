@@ -1,0 +1,20 @@
+# Development Environment Override Configuration
+services:
+  backend:
+    ports:
+      - "8000:8000"
+    environment:
+      - ENVIRONMENT=development
+      - LOG_LEVEL=debug
+
+  frontend:
+    ports:
+      - "80:80"
+
+  postgres:
+    ports:
+      - "5432:5432"
+
+  redis:
+    ports:
+      - "6379:6379"
