@@ -1,5 +1,5 @@
 from fastapi import APIRouter
-from app.api.v1.endpoints import auth, users, workers, shifts, rules, schedules, health, assignments, departments, jobs
+from app.api.v1.endpoints import auth, users, workers, shifts, rules, schedules, health, assignments, departments, jobs, import_export, analytics
 
 api_router = APIRouter()
 
@@ -13,3 +13,5 @@ api_router.include_router(rules.router, prefix="/rules", tags=["Rules & Constrai
 api_router.include_router(schedules.router, prefix="/schedules", tags=["Schedules"])
 api_router.include_router(assignments.router, prefix="/assignments", tags=["Assignments"])
 api_router.include_router(jobs.router, prefix="/jobs", tags=["Background Jobs"])
+api_router.include_router(import_export.router, tags=["Import / Export"])
+api_router.include_router(analytics.router, prefix="/analytics", tags=["Analytics"])

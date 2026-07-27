@@ -20,16 +20,19 @@ Staff Scheduler is an internal enterprise staff scheduling web application built
 * ⚡ **Asynchronous Celery & Redis Jobs**: Non-blocking background job queue for long-running schedule optimization and rebalancing.
 * 🛡️ **Rule Engine & Conflict Inspector**: Hard and soft constraint evaluation with diagnostic reports highlighting exact rule violations.
 * 🔑 **JWT & Role-Based Access Control**: Secure token authentication supporting `ADMIN`, `SCHEDULER`, and `EMPLOYEE` roles.
-* 📊 **Coverage & Diagnostic Dashboards**: Real-time visual metrics for contract hour fulfillment, worker statistics, and system audit logs.
+* 📊 **Analytics & Reporting Dashboard**: Interactive analytics with daily coverage charts, worker load distribution, department donut charts, and schedule comparison tables — built with pure SVG (no external chart library).
+* 📤 **Enterprise Import / Export**: Import workers via CSV/XLSX with dry-run validation; export schedules in CSV, Excel, and JSON formats.
+* 🔍 **System Observability**: Structured request logging, audit trail, system status dashboard, and Celery worker monitoring.
+* 💾 **Automated Backups**: Scripted PostgreSQL and configuration backups with SHA-256 verification and automated pruning.
 
 ---
 
 ## Tech Stack
 
-* **Frontend**: React 18, TypeScript, FullCalendar, Tailwind CSS, Vite, Axios
-* **Backend**: Python 3.12, FastAPI, SQLAlchemy 2.0, Pydantic v2, Alembic
+* **Frontend**: React 18, TypeScript, FullCalendar, Vanilla CSS, Vite, Axios
+* **Backend**: Python 3.12, FastAPI, SQLAlchemy 2.0, Pydantic v2
 * **Constraint Solver**: Google OR-Tools CP-SAT (Constraint Programming - Satisfiability)
-* **Background Tasks**: Celery, Redis 7
+* **Background Tasks**: Celery 5, Redis 7
 * **Database**: PostgreSQL 16
 * **Containerization & Web Server**: Docker, Docker Compose, Nginx
 
@@ -86,24 +89,25 @@ graph TD
 Scheduler/
 ├── backend/                  # FastAPI Python backend service
 │   ├── app/
-│   │   ├── api/v1/          # REST endpoints (auth, workers, schedules, rules, jobs)
+│   │   ├── api/v1/          # REST endpoints (auth, workers, schedules, rules, jobs, analytics, import/export)
 │   │   ├── core/            # Config, database setup, security, Celery app
 │   │   ├── models/          # SQLAlchemy ORM models
 │   │   ├── rules/           # Hard & soft constraint evaluation engine
-│   │   ├── services/        # Business logic services
+│   │   ├── services/        # Business logic services (auth, schedule, solver, export, import, audit)
 │   │   ├── solver/          # Google OR-Tools CP-SAT integration & diagnostics
 │   │   └── tasks/           # Celery background tasks
-│   └── tests/               # Pytest suite (44 passing tests)
+│   └── tests/               # Pytest suite (48 passing tests, conftest.py fixtures)
 ├── frontend/                 # React TypeScript frontend app
 │   ├── src/
 │   │   ├── components/      # UI components & Schedule Editor modules
 │   │   ├── context/         # Auth & global context
 │   │   ├── hooks/           # Custom hooks (useScheduleHistory)
-│   │   ├── pages/           # Application views
+│   │   ├── pages/           # Application views (Dashboard, Analytics, Import/Export, etc.)
 │   │   └── services/        # Typed API service modules
 │   └── public/              # Static assets
-├── docs/                     # Project technical documentation
+├── docs/                     # Project technical documentation (23 files)
 ├── ADR/                      # Architectural Decision Records (0001-0009)
+├── scripts/                  # Backup, restore, update, and rollback scripts
 └── docker-compose.yml        # Multi-container service orchestrator
 ```
 

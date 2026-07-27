@@ -11,4 +11,8 @@ echo "=== Creating PostgreSQL Database Backup ==="
 docker compose exec -T postgres pg_dump -U postgres scheduler > "$BACKUP_FILE"
 
 echo "Backup created successfully: $BACKUP_FILE"
+
+echo "Pruning backups older than 30 days..."
+find "$BACKUP_DIR" -type f -name "scheduler_backup_*.sql" -mtime +30 -delete || true
+
 ls -lh "$BACKUP_FILE"

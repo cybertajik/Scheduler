@@ -2,7 +2,7 @@ import React from 'react';
 import { NavLink } from 'react-router-dom';
 import {
   LayoutDashboard, Users, Calendar, ShieldAlert, Clock,
-  FileText, UserCog, LogOut, CalendarCheck
+  FileText, UserCog, LogOut, CalendarCheck, Activity, FileSpreadsheet, BarChart2
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { StatusBadge } from '../Common/StatusBadge';
@@ -12,11 +12,14 @@ export const Sidebar: React.FC = () => {
 
   const navItems = [
     { label: 'Dashboard', path: '/', icon: LayoutDashboard, show: true },
+    { label: 'Analytics', path: '/analytics', icon: BarChart2, show: true },
     { label: 'Schedules', path: '/schedules', icon: Calendar, show: canManageSchedules || true },
     { label: 'Workers', path: '/workers', icon: Users, show: canManageWorkers || true },
     { label: 'Shift Definitions', path: '/shift-types', icon: Clock, show: canManageWorkers || true },
     { label: 'Rules & Constraints', path: '/rules', icon: ShieldAlert, show: canManageWorkers || true },
     { label: 'Audit Log', path: '/audit-log', icon: FileText, show: true },
+    { label: 'Import / Export', path: '/import-export', icon: FileSpreadsheet, show: canManageUsers },
+    { label: 'System Status', path: '/system-status', icon: Activity, show: canManageUsers },
     { label: 'User Accounts', path: '/users', icon: UserCog, show: canManageUsers },
   ];
 

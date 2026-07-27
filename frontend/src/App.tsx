@@ -14,6 +14,9 @@ import { ConflictReviewPage } from './pages/ConflictReviewPage';
 import { AuditLogPage } from './pages/AuditLogPage';
 import { UsersManagementPage } from './pages/UsersManagementPage';
 import { ProfilePage } from './pages/ProfilePage';
+import { SystemStatusPage } from './pages/SystemStatusPage';
+import { ImportExportPage } from './pages/ImportExportPage';
+import { AnalyticsDashboardPage } from './pages/AnalyticsDashboardPage';
 
 const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { isAuthenticated } = useAuth();
@@ -126,6 +129,30 @@ export function App() {
               <AdminRoute>
                 <UsersManagementPage />
               </AdminRoute>
+            }
+          />
+          <Route
+            path="/system-status"
+            element={
+              <AdminRoute>
+                <SystemStatusPage />
+              </AdminRoute>
+            }
+          />
+          <Route
+            path="/import-export"
+            element={
+              <AdminRoute>
+                <ImportExportPage />
+              </AdminRoute>
+            }
+          />
+          <Route
+            path="/analytics"
+            element={
+              <ProtectedRoute>
+                <AnalyticsDashboardPage />
+              </ProtectedRoute>
             }
           />
           <Route path="*" element={<Navigate to="/" replace />} />

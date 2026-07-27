@@ -8,7 +8,7 @@ from app.schemas.schedule import ScheduleCreate
 class ScheduleService:
     @staticmethod
     def get_all_schedules(db: Session) -> List[Schedule]:
-        return db.query(Schedule).all()
+        return db.query(Schedule).order_by(Schedule.year.desc(), Schedule.month.desc()).all()
 
     @staticmethod
     def get_schedule_by_id(db: Session, schedule_id: uuid.UUID) -> Schedule:

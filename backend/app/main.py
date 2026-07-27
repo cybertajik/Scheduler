@@ -6,7 +6,7 @@ from fastapi.responses import JSONResponse
 from sqlalchemy.exc import IntegrityError, SQLAlchemyError
 from app.core.config import settings
 from app.core.database import engine, Base, SessionLocal
-from app.core.middleware import SecurityHeadersMiddleware
+from app.core.middleware import SecurityHeadersMiddleware, RequestLoggingMiddleware
 from app.api.v1.router import api_router
 from app.models import User, UserRole
 from app.core.security import get_password_hash
@@ -22,12 +22,12 @@ async def lifespan(app: FastAPI):
     logger.info("Initializing database tables...")
     Base.metadata.create_all(bind=engine)
     
-    # Seed default Admin if no users exist
+    # Seed default Admin user on first boot only
     db = SessionLocal()
     try:
         admin = db.query(User).filter(User.role == UserRole.ADMIN).first()
         if not admin:
-            logger.info("Seeding default Admin user (admin@admin.com / !23QWEasd)...")
+            logger.info("First boot: seeding default Admin user (admin@admin.com)...")
             default_admin = User(
                 username="admin",
                 email="admin@admin.com",
@@ -39,12 +39,9 @@ async def lifespan(app: FastAPI):
             )
             db.add(default_admin)
             db.commit()
+            logger.info("Default Admin user created. Change the password after first login.")
         else:
-            logger.info("Updating existing Admin credentials to admin@admin.com...")
-            admin.email = "admin@admin.com"
-            admin.password_hash = get_password_hash("!23QWEasd")
-            admin.active = True
-            db.commit()
+            logger.info(f"Admin user '{admin.username}' found — skipping seed.")
     finally:
         db.close()
 
@@ -59,7 +56,8 @@ app = FastAPI(
     lifespan=lifespan
 )
 
-# ── Security Middleware ──
+# ── Middleware ──
+app.add_middleware(RequestLoggingMiddleware)
 app.add_middleware(SecurityHeadersMiddleware)
 
 # ── Central Error Handlers ──
