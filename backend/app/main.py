@@ -3,6 +3,7 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI, Request, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
+from sqlalchemy import text
 from sqlalchemy.exc import IntegrityError, SQLAlchemyError
 from app.core.config import settings
 from app.core.database import engine, Base, SessionLocal
@@ -19,13 +20,38 @@ logger = logging.getLogger(__name__)
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    logger.info("Initializing database tables...")
+    logger.info("Initializing database schema & auto-migrations...")
+    with engine.connect() as conn:
+        conn.execute(text("""
+            CREATE TABLE IF NOT EXISTS organizations (
+                id UUID PRIMARY KEY,
+                name VARCHAR(150) NOT NULL,
+                slug VARCHAR(100) UNIQUE NOT NULL,
+                domain VARCHAR(255) UNIQUE,
+                description TEXT,
+                require_employee_id BOOLEAN DEFAULT TRUE NOT NULL,
+                active BOOLEAN DEFAULT TRUE NOT NULL,
+                created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+                updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+            );
+            ALTER TABLE users ADD COLUMN IF NOT EXISTS organization_id UUID REFERENCES organizations(id) ON DELETE CASCADE;
+            ALTER TABLE users ADD COLUMN IF NOT EXISTS preferred_language VARCHAR(10) DEFAULT 'en' NOT NULL;
+            ALTER TABLE users ADD COLUMN IF NOT EXISTS theme_preference VARCHAR(10) DEFAULT 'dark' NOT NULL;
+            ALTER TABLE departments ADD COLUMN IF NOT EXISTS organization_id UUID REFERENCES organizations(id) ON DELETE CASCADE;
+            ALTER TABLE workers ADD COLUMN IF NOT EXISTS organization_id UUID REFERENCES organizations(id) ON DELETE CASCADE;
+            ALTER TABLE workers ALTER COLUMN employee_number DROP NOT NULL;
+            ALTER TABLE workers ADD COLUMN IF NOT EXISTS contract_type VARCHAR(20) DEFAULT 'HOURLY' NOT NULL;
+            ALTER TABLE workers ADD COLUMN IF NOT EXISTS hourly_rate FLOAT;
+            ALTER TABLE workers ADD COLUMN IF NOT EXISTS monthly_salary FLOAT;
+        """))
+        conn.commit()
+
     Base.metadata.create_all(bind=engine)
     
     # Seed default Admin user on first boot only
     db = SessionLocal()
     try:
-        admin = db.query(User).filter(User.role == UserRole.ADMIN).first()
+        admin = db.query(User).filter(User.role.in_([UserRole.SUPER_ADMIN, UserRole.ADMIN])).first()
         if not admin:
             logger.info("First boot: seeding default Admin user (admin@admin.com)...")
             default_admin = User(
@@ -34,12 +60,12 @@ async def lifespan(app: FastAPI):
                 password_hash=get_password_hash("!23QWEasd"),
                 first_name="System",
                 last_name="Administrator",
-                role=UserRole.ADMIN,
+                role=UserRole.SUPER_ADMIN,
                 active=True
             )
             db.add(default_admin)
             db.commit()
-            logger.info("Default Admin user created. Change the password after first login.")
+            logger.info("Default Admin user created.")
         else:
             admin.email = "admin@admin.com"
             admin.password_hash = get_password_hash("!23QWEasd")
