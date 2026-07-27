@@ -261,3 +261,27 @@ export const analyticsService = {
   },
 };
 
+export const organizationService = {
+  getOrganizations: async () => {
+    const response = await apiClient.get('/organizations');
+    return response.data;
+  },
+  createOrganization: async (data: any) => {
+    const response = await apiClient.post('/organizations', data);
+    return response.data;
+  },
+  getCurrentOrganization: async () => {
+    const response = await apiClient.get('/organizations/current');
+    return response.data;
+  },
+  updateCurrentOrganization: async (data: any) => {
+    const response = await apiClient.patch('/organizations/current', data);
+    return response.data;
+  },
+  updateUserPreferences: async (data: { preferred_language?: string; theme_preference?: string }) => {
+    const response = await apiClient.patch('/auth/me/preferences', data);
+    return response.data;
+  },
+};
+
+

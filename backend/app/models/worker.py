@@ -1,11 +1,12 @@
 import uuid
 from datetime import date, datetime, timezone
 from typing import Optional, List
-from sqlalchemy import String, Boolean, Date, Float, Text, ForeignKey, DateTime
+from sqlalchemy import String, Boolean, Date, Float, Text, ForeignKey, DateTime, Enum as SQLEnum
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from app.core.database import Base
 from app.models.base import UUIDPrimaryKeyMixin, TimestampMixin
+from app.models.enums import ContractType
 
 class WorkerSkill(Base):
     __tablename__ = "worker_skills"
@@ -42,7 +43,13 @@ class Skill(Base, UUIDPrimaryKeyMixin, TimestampMixin):
 class Worker(Base, UUIDPrimaryKeyMixin, TimestampMixin):
     __tablename__ = "workers"
 
-    employee_number: Mapped[str] = mapped_column(String(50), unique=True, index=True, nullable=False)
+    organization_id: Mapped[Optional[uuid.UUID]] = mapped_column(
+        UUID(as_uuid=True),
+        ForeignKey("organizations.id", ondelete="CASCADE"),
+        index=True,
+        nullable=True
+    )
+    employee_number: Mapped[Optional[str]] = mapped_column(String(50), index=True, nullable=True)
     department_id: Mapped[uuid.UUID] = mapped_column(
         UUID(as_uuid=True),
         ForeignKey("departments.id", ondelete="RESTRICT"),
@@ -61,10 +68,18 @@ class Worker(Base, UUIDPrimaryKeyMixin, TimestampMixin):
     email: Mapped[Optional[str]] = mapped_column(String(255), nullable=True)
     hire_date: Mapped[Optional[date]] = mapped_column(Date, nullable=True)
     weekly_contract_hours: Mapped[float] = mapped_column(Float, default=40.0, nullable=False)
+    contract_type: Mapped[ContractType] = mapped_column(
+        SQLEnum(ContractType, name="contracttype_enum"),
+        default=ContractType.HOURLY,
+        nullable=False
+    )
+    hourly_rate: Mapped[Optional[float]] = mapped_column(Float, nullable=True)
+    monthly_salary: Mapped[Optional[float]] = mapped_column(Float, nullable=True)
     active: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
     notes: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
 
     # Relationships
+    organization = relationship("Organization", back_populates="workers")
     department = relationship("Department", back_populates="workers")
     user = relationship("User", back_populates="worker")
     skills: Mapped[List[Skill]] = relationship(

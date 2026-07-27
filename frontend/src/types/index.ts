@@ -1,4 +1,4 @@
-export type UserRole = 'ADMIN' | 'SCHEDULER' | 'MANAGER' | 'EMPLOYEE';
+export type UserRole = 'SUPER_ADMIN' | 'ORG_ADMIN' | 'ADMIN' | 'SCHEDULER' | 'MANAGER' | 'EMPLOYEE';
 
 export type ScheduleStatus = 'DRAFT' | 'GENERATED' | 'PUBLISHED' | 'ARCHIVED';
 
@@ -15,6 +15,8 @@ export type ConstraintType =
 
 export type AssignmentSource = 'SOLVER' | 'MANUAL';
 
+export type ContractType = 'HOURLY' | 'SALARY';
+
 export interface User {
   id: string;
   username: string;
@@ -26,17 +28,21 @@ export interface User {
   active: boolean;
   last_login_at?: string;
   must_change_password: boolean;
+  preferred_language?: string;
+  theme_preference?: string;
+  organization_id?: string;
 }
 
 export interface Department {
   id: string;
   name: string;
   description?: string;
+  organization_id?: string;
 }
 
 export interface Worker {
   id: string;
-  employee_number: string;
+  employee_number?: string;
   department_id: string;
   first_name: string;
   last_name: string;
@@ -44,18 +50,26 @@ export interface Worker {
   email?: string;
   hire_date?: string;
   weekly_contract_hours: number;
+  contract_type?: ContractType;
+  hourly_rate?: number;
+  monthly_salary?: number;
   active: boolean;
   notes?: string;
+  organization_id?: string;
 }
 
 export interface WorkerCreate {
-  employee_number: string;
+  employee_number?: string;
   first_name: string;
   last_name: string;
   email?: string;
   phone?: string;
   department_id?: string;
   weekly_contract_hours?: number;
+  contract_type?: ContractType;
+  hourly_rate?: number;
+  monthly_salary?: number;
+  organization_id?: string;
 }
 
 export interface ShiftType {

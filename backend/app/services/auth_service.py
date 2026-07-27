@@ -4,7 +4,7 @@ from typing import List, Optional
 from sqlalchemy.orm import Session
 from fastapi import HTTPException, status
 from app.models import User, UserRole
-from app.schemas.auth import UserCreate, UserLogin, UserUpdate, PasswordChangeRequest
+from app.schemas.auth import UserCreate, UserLogin, UserUpdate, PasswordChangeRequest, UserPreferencesUpdate
 from app.core.security import (
     verify_password, get_password_hash, validate_password_complexity,
     create_access_token, create_refresh_token, decode_token
@@ -59,7 +59,12 @@ class AuthService:
                 detail="Username or email is already registered"
             )
 
+        org_id = user_in.organization_id
+        if not org_id and creator and creator.organization_id:
+            org_id = creator.organization_id
+
         user = User(
+            organization_id=org_id,
             username=user_in.username,
             email=user_in.email,
             password_hash=get_password_hash(user_in.password),
@@ -118,8 +123,21 @@ class AuthService:
         )
 
     @staticmethod
-    def get_all_users(db: Session) -> List[User]:
-        return db.query(User).order_by(User.username).all()
+    def update_preferences(db: Session, user: User, pref_in: UserPreferencesUpdate) -> User:
+        if pref_in.preferred_language:
+            user.preferred_language = pref_in.preferred_language
+        if pref_in.theme_preference:
+            user.theme_preference = pref_in.theme_preference
+        db.commit()
+        db.refresh(user)
+        return user
+
+    @staticmethod
+    def get_all_users(db: Session, current_user: Optional[User] = None) -> List[User]:
+        query = db.query(User)
+        if current_user and current_user.role not in [UserRole.SUPER_ADMIN, UserRole.ADMIN] and current_user.organization_id:
+            query = query.filter(User.organization_id == current_user.organization_id)
+        return query.order_by(User.username).all()
 
     @staticmethod
     def get_user_by_id(db: Session, user_id: uuid.UUID) -> User:

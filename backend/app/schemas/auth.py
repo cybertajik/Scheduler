@@ -11,6 +11,9 @@ class Token(BaseModel):
     user_role: UserRole
     full_name: str
     user_id: uuid.UUID
+    preferred_language: str = "en"
+    theme_preference: str = "dark"
+    organization_id: Optional[uuid.UUID] = None
 
 class RefreshTokenRequest(BaseModel):
     refresh_token: str
@@ -30,6 +33,7 @@ class UserCreate(BaseModel):
     first_name: str
     last_name: str
     role: UserRole = UserRole.EMPLOYEE
+    organization_id: Optional[uuid.UUID] = None
 
 class UserUpdate(BaseModel):
     first_name: Optional[str] = None
@@ -38,6 +42,10 @@ class UserUpdate(BaseModel):
     role: Optional[UserRole] = None
     active: Optional[bool] = None
     must_change_password: Optional[bool] = None
+
+class UserPreferencesUpdate(BaseModel):
+    preferred_language: Optional[str] = None
+    theme_preference: Optional[str] = None
 
 class PasswordChangeRequest(BaseModel):
     current_password: str
@@ -55,3 +63,6 @@ class UserResponse(BaseModel):
     active: bool
     last_login_at: Optional[datetime] = None
     must_change_password: bool = False
+    preferred_language: str = "en"
+    theme_preference: str = "dark"
+    organization_id: Optional[uuid.UUID] = None

@@ -15,7 +15,7 @@ def list_users(
     db: Session = Depends(get_db),
     current_admin: User = Depends(admin_only)
 ):
-    return AuthService.get_all_users(db)
+    return AuthService.get_all_users(db, current_user=current_admin)
 
 @router.post("", response_model=UserResponse, status_code=201)
 def create_user(

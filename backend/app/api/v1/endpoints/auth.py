@@ -3,7 +3,7 @@ from fastapi.security import OAuth2PasswordRequestForm, OAuth2PasswordBearer
 from sqlalchemy.orm import Session
 from app.core.database import get_db
 from app.schemas.auth import (
-    Token, UserResponse, UserLogin, RefreshTokenRequest, PasswordChangeRequest
+    Token, UserResponse, UserLogin, RefreshTokenRequest, PasswordChangeRequest, UserPreferencesUpdate
 )
 from app.services.auth_service import AuthService
 from app.api.v1.deps import get_current_user
@@ -32,7 +32,10 @@ def login(
         token_type="bearer",
         user_role=user.role,
         full_name=user.full_name,
-        user_id=user.id
+        user_id=user.id,
+        preferred_language=user.preferred_language or "en",
+        theme_preference=user.theme_preference or "dark",
+        organization_id=user.organization_id
     )
 
 @router.post("/refresh")
@@ -51,6 +54,14 @@ def logout(
 @router.get("/me", response_model=UserResponse)
 def get_me(current_user: User = Depends(get_current_user)):
     return current_user
+
+@router.patch("/me/preferences", response_model=UserResponse)
+def update_preferences(
+    pref_in: UserPreferencesUpdate,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    return AuthService.update_preferences(db, current_user, pref_in)
 
 @router.post("/change-password")
 def change_password(

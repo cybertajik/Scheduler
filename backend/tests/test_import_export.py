@@ -1,4 +1,5 @@
 import io
+import uuid
 import pytest
 from fastapi.testclient import TestClient
 from sqlalchemy.orm import Session
@@ -21,10 +22,11 @@ def test_export_audit_log_csv(client: TestClient, admin_token_headers: dict):
 
 def test_validate_workers_import_csv(client: TestClient, admin_token_headers: dict):
     """Test dry-run validation for worker CSV upload."""
+    uid = uuid.uuid4().hex[:6]
     csv_content = (
         "Employee Number,First Name,Last Name,Email,Department\n"
-        "W9001,John,ImportTest,john.import@company.local,Engineering\n"
-        "W9002,Jane,ImportTest,jane.import@company.local,Operations\n"
+        f"W{uid}1,John,ImportTest,john.{uid}1@company.local,Engineering\n"
+        f"W{uid}2,Jane,ImportTest,jane.{uid}2@company.local,Operations\n"
     )
     files = {"file": ("test_workers.csv", io.BytesIO(csv_content.encode("utf-8")), "text/csv")}
     response = client.post("/api/v1/import/validate-workers", headers=admin_token_headers, files=files)
@@ -36,13 +38,14 @@ def test_validate_workers_import_csv(client: TestClient, admin_token_headers: di
 
 def test_commit_workers_import(client: TestClient, admin_token_headers: dict, db: Session):
     """Test committing validated worker import records."""
+    test_code = f"W{uuid.uuid4().hex[:6]}"
     valid_records = [
         {
             "row": 2,
-            "code": "W9901",
+            "code": test_code,
             "first_name": "CommitTest1",
             "last_name": "User",
-            "email": "committest1@company.local",
+            "email": f"{test_code.lower()}@company.local",
             "dept_name": "Engineering"
         }
     ]
@@ -57,6 +60,6 @@ def test_commit_workers_import(client: TestClient, admin_token_headers: dict, db
     assert data["imported_count"] == 1
 
     # Verify worker created in DB
-    w = db.query(Worker).filter(Worker.employee_number == "W9901").first()
+    w = db.query(Worker).filter(Worker.employee_number == test_code).first()
     assert w is not None
     assert w.first_name == "CommitTest1"
