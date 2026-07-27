@@ -23,7 +23,7 @@ docker-compose exec backend pytest tests/test_import_export.py -v
 Shared pytest fixtures are defined in `backend/tests/conftest.py`:
 
 | Fixture | Scope | Description |
-|---|---|---|
+| --- | --- | --- |
 | `client` | module | FastAPI `TestClient` bound to the full application |
 | `admin_token_headers` | module | `Authorization: Bearer <token>` headers for the admin account |
 | `db` | function | SQLAlchemy `Session` for direct ORM assertions |
@@ -78,7 +78,7 @@ Shared pytest fixtures are defined in `backend/tests/conftest.py`:
 ## Test Results History
 
 | Date | Tests | Pass | Fail |
-|---|---|---|---|
+| --- | --- | --- | --- |
 | Step 14 | 44 | 44 | 0 |
 | Step 15 | 48 | 44 | 4 (broken fixtures) |
 | Step 16 (audit) | 48 | **48** | **0** |

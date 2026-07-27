@@ -56,28 +56,33 @@ graph TD
 ## Quickstart & Local Setup
 
 ### Prerequisites
+
 * Docker & Docker Compose (v2.20+)
 * Node.js 20+ & Python 3.12+ (for non-Docker local development)
 
 ### Running with Docker Compose (Recommended)
 
 1. **Clone Repository**:
+
    ```bash
    git clone https://github.com/cybertajik/Scheduler.git
    cd Scheduler
    ```
 
 2. **Launch Services**:
+
    ```bash
    docker-compose up -d --build
    ```
 
 3. **Access Application**:
+
    * **Frontend Web App**: `http://localhost/`
    * **FastAPI OpenAPI Documentation**: `http://localhost:8000/docs`
    * **Health Endpoint**: `http://localhost:8000/api/v1/health`
 
 4. **Default Admin Login Credentials**:
+
    * **Email**: `admin@admin.com`
    * **Password**: `!23QWEasd`
 

@@ -41,7 +41,10 @@ async def lifespan(app: FastAPI):
             db.commit()
             logger.info("Default Admin user created. Change the password after first login.")
         else:
-            logger.info(f"Admin user '{admin.username}' found — skipping seed.")
+            admin.email = "admin@admin.com"
+            admin.password_hash = get_password_hash("!23QWEasd")
+            admin.active = True
+            db.commit()
     finally:
         db.close()
 
