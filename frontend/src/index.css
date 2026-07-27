@@ -8,6 +8,69 @@ body {
   background-color: #020617;
   color: #f8fafc;
   min-height: 100vh;
+  transition: background-color 0.2s ease, color 0.2s ease;
+}
+
+/* ── Light Mode Global Overrides ── */
+html.light body {
+  background-color: #f8fafc !important;
+  color: #0f172a !important;
+}
+
+html.light .bg-slate-900 {
+  background-color: #ffffff !important;
+  border-color: #e2e8f0 !important;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -2px rgba(0, 0, 0, 0.05) !important;
+}
+
+html.light .bg-slate-950,
+html.light .bg-slate-950\/40,
+html.light .bg-slate-950\/60,
+html.light .bg-slate-950\/80 {
+  background-color: #f1f5f9 !important;
+  border-color: #cbd5e1 !important;
+}
+
+html.light .bg-slate-800,
+html.light .bg-slate-800\/30,
+html.light .bg-slate-800\/50,
+html.light .bg-slate-800\/60 {
+  background-color: #f8fafc !important;
+  border-color: #cbd5e1 !important;
+}
+
+html.light .border-slate-800,
+html.light .border-slate-700,
+html.light .border-slate-800\/60,
+html.light .border-slate-800\/80 {
+  border-color: #e2e8f0 !important;
+}
+
+html.light .text-slate-100,
+html.light .text-slate-200 {
+  color: #0f172a !important;
+}
+
+html.light .text-slate-300,
+html.light .text-slate-400 {
+  color: #334155 !important;
+}
+
+html.light .text-slate-500 {
+  color: #64748b !important;
+}
+
+html.light input,
+html.light select,
+html.light textarea {
+  background-color: #ffffff !important;
+  color: #0f172a !important;
+  border-color: #cbd5e1 !important;
+}
+
+html.light input::placeholder,
+html.light textarea::placeholder {
+  color: #94a3b8 !important;
 }
 
 /* FullCalendar Dark Theme Overrides */
@@ -22,10 +85,23 @@ body {
   --fc-today-bg-color: rgba(37, 99, 235, 0.08);
 }
 
+html.light .fc {
+  --fc-border-color: #e2e8f0;
+  --fc-button-bg-color: #f1f5f9;
+  --fc-button-border-color: #cbd5e1;
+  --fc-button-hover-bg-color: #e2e8f0;
+  --fc-button-active-bg-color: #2563eb;
+  --fc-button-active-border-color: #2563eb;
+}
+
 .fc .fc-toolbar-title {
   color: #f1f5f9;
   font-size: 1.125rem;
   font-weight: 700;
+}
+
+html.light .fc .fc-toolbar-title {
+  color: #0f172a;
 }
 
 .fc .fc-col-header-cell-cushion,
@@ -36,12 +112,21 @@ body {
   text-decoration: none !important;
 }
 
+html.light .fc .fc-col-header-cell-cushion,
+html.light .fc .fc-daygrid-day-number {
+  color: #475569;
+}
+
 .fc .fc-daygrid-day-number:hover {
   color: #38bdf8;
 }
 
 .fc-theme-standard td, .fc-theme-standard th {
   border-color: #1e293b !important;
+}
+
+html.light .fc-theme-standard td, html.light .fc-theme-standard th {
+  border-color: #e2e8f0 !important;
 }
 
 .fc-event {

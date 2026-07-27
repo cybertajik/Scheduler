@@ -21,6 +21,13 @@ logger = logging.getLogger(__name__)
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     logger.info("Initializing database schema & auto-migrations...")
+    with engine.connect().execution_options(isolation_level="AUTOCOMMIT") as conn:
+        for val in ["SUPER_ADMIN", "ORG_ADMIN"]:
+            try:
+                conn.execute(text(f"ALTER TYPE userrole_enum ADD VALUE IF NOT EXISTS '{val}'"))
+            except Exception as e:
+                logger.warning(f"Enum update note: {e}")
+
     with engine.connect() as conn:
         conn.execute(text("""
             CREATE TABLE IF NOT EXISTS organizations (
