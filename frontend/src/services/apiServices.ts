@@ -49,6 +49,14 @@ export const userService = {
     return response.data;
   },
   deactivateUser: async (id: string) => {
+    const response = await apiClient.post(`/users/${id}/deactivate`);
+    return response.data;
+  },
+  activateUser: async (id: string) => {
+    const response = await apiClient.post(`/users/${id}/activate`);
+    return response.data;
+  },
+  deleteUser: async (id: string) => {
     const response = await apiClient.delete(`/users/${id}`);
     return response.data;
   },
@@ -81,6 +89,10 @@ export const workerService = {
   },
   createWorkerRule: async (workerId: string, rule: ConstraintCreate): Promise<WorkerConstraint> => {
     const response = await apiClient.post(`/workers/${workerId}/rules`, rule);
+    return response.data;
+  },
+  deleteWorkerRule: async (workerId: string, ruleId: string) => {
+    const response = await apiClient.delete(`/workers/${workerId}/rules/${ruleId}`);
     return response.data;
   },
 };
@@ -190,3 +202,98 @@ export const departmentService = {
     return response.data;
   },
 };
+
+export const systemStatusService = {
+  getHealthStatus: async () => {
+    const response = await apiClient.get('/health');
+    return response.data;
+  },
+  getDatabaseStats: async () => {
+    const response = await apiClient.get('/health/database');
+    return response.data;
+  },
+  getRedisStats: async () => {
+    const response = await apiClient.get('/health/redis');
+    return response.data;
+  },
+  getCeleryStats: async () => {
+    const response = await apiClient.get('/health/celery');
+    return response.data;
+  },
+  getSystemMetrics: async () => {
+    const response = await apiClient.get('/health/metrics');
+    return response.data;
+  },
+};
+
+export const importExportService = {
+  downloadScheduleExportUrl: (scheduleId: string, format: string) => {
+    return `/api/v1/export/schedule/${scheduleId}?format=${format}`;
+  },
+  downloadWorkersExportUrl: () => '/api/v1/export/workers',
+  downloadAuditLogExportUrl: () => '/api/v1/export/audit-log',
+  validateWorkersImport: async (file: File) => {
+    const formData = new FormData();
+    formData.append('file', file);
+    const response = await apiClient.post('/import/validate-workers', formData, {
+      headers: { 'Content-Type': 'multipart/form-data' }
+    });
+    return response.data;
+  },
+  commitWorkersImport: async (validRecords: any[]) => {
+    const response = await apiClient.post('/import/commit-workers', { valid_records: validRecords });
+    return response.data;
+  }
+};
+
+export const analyticsService = {
+  getOverview: async () => {
+    const response = await apiClient.get('/analytics/overview');
+    return response.data;
+  },
+  getSchedulesSummary: async () => {
+    const response = await apiClient.get('/analytics/schedules-summary');
+    return response.data;
+  },
+  getDailyCoverage: async (scheduleId: string) => {
+    const response = await apiClient.get(`/analytics/${scheduleId}/coverage`);
+    return response.data;
+  },
+  getWorkerLoad: async (scheduleId: string) => {
+    const response = await apiClient.get(`/analytics/${scheduleId}/worker-load`);
+    return response.data;
+  },
+  getDepartmentLoad: async (scheduleId: string) => {
+    const response = await apiClient.get(`/analytics/${scheduleId}/department-load`);
+    return response.data;
+  },
+  getShiftDistribution: async (scheduleId: string) => {
+    const response = await apiClient.get(`/analytics/${scheduleId}/shift-distribution`);
+    return response.data;
+  },
+};
+
+export const organizationService = {
+  getOrganizations: async () => {
+    const response = await apiClient.get('/organizations');
+    return response.data;
+  },
+  createOrganization: async (data: any) => {
+    const response = await apiClient.post('/organizations', data);
+    return response.data;
+  },
+  getCurrentOrganization: async () => {
+    const response = await apiClient.get('/organizations/current');
+    return response.data;
+  },
+  updateCurrentOrganization: async (data: any) => {
+    const response = await apiClient.patch('/organizations/current', data);
+    return response.data;
+  },
+  updateUserPreferences: async (data: { preferred_language?: string; theme_preference?: string }) => {
+    const response = await apiClient.patch('/auth/me/preferences', data);
+    return response.data;
+  },
+};
+
+

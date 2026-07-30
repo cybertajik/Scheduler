@@ -26,13 +26,13 @@ export const LoginPage: React.FC = () => {
     }
   };
 
-  const handleDemoLogin = async (demoEmail: string) => {
+  const handleDemoLogin = async (demoEmail: string, demoPassword = '!23QWEasd') => {
     setEmail(demoEmail);
-    setPassword('Admin123!');
+    setPassword(demoPassword);
     setError('');
     setLoading(true);
     try {
-      await login(demoEmail, 'Admin123!');
+      await login(demoEmail, demoPassword);
       navigate('/');
     } catch (err: any) {
       setError(err.response?.data?.detail || 'Demo login failed.');
@@ -75,7 +75,7 @@ export const LoginPage: React.FC = () => {
                 required
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                placeholder="admin@scheduler.internal"
+                placeholder="admin@admin.com"
                 className="w-full pl-10 pr-4 py-2.5 bg-slate-950 border border-slate-800 rounded-xl text-slate-100 placeholder-slate-600 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-all text-sm"
               />
             </div>
@@ -119,16 +119,16 @@ export const LoginPage: React.FC = () => {
           <p className="text-xs text-slate-500 text-center font-medium mb-3">Quick Demo Sign-In</p>
           <div className="grid grid-cols-2 gap-2">
             <button
-              onClick={() => handleDemoLogin('admin@scheduler.internal')}
+              onClick={() => handleDemoLogin('admin@admin.com', '!23QWEasd')}
               className="px-3 py-2 bg-slate-950 hover:bg-slate-800 border border-slate-800 rounded-lg text-xs text-slate-300 transition-colors font-medium text-center"
             >
               Admin Demo
             </button>
             <button
-              onClick={() => handleDemoLogin('scheduler@scheduler.internal')}
+              onClick={() => handleDemoLogin('manager@admin.com', '!23QWEasd')}
               className="px-3 py-2 bg-slate-950 hover:bg-slate-800 border border-slate-800 rounded-lg text-xs text-slate-300 transition-colors font-medium text-center"
             >
-              Scheduler Demo
+              Manager Demo
             </button>
           </div>
         </div>

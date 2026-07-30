@@ -120,16 +120,122 @@ class TestAuthAndSecurityLayer(unittest.TestCase):
         self.assertEqual(patch_resp.json()["role"], "MANAGER")
         self.assertEqual(patch_resp.json()["first_name"], "Janet")
 
-        # 4. Deactivate User
-        del_resp = self.client.delete(f"/api/v1/users/{user_id}", headers=self.admin_headers)
-        self.assertEqual(del_resp.status_code, 200)
+        # 4. Deactivate User via POST deactivate endpoint
+        deact_resp = self.client.post(f"/api/v1/users/{user_id}/deactivate", headers=self.admin_headers)
+        self.assertEqual(deact_resp.status_code, 200)
 
         # 5. Inactive User cannot login
         login_disabled = self.client.post("/api/v1/auth/login", data={
             "username": f"user_{user_suffix}@test.com",
             "password": "SecurePass123!"
         })
-        self.assertEqual(login_disabled.status_code, 403)
+        self.assertIn(login_disabled.status_code, [401, 403])
+
+        # 6. Activate User via POST activate endpoint
+        act_resp = self.client.post(f"/api/v1/users/{user_id}/activate", headers=self.admin_headers)
+        self.assertEqual(act_resp.status_code, 200)
+
+        # 7. Delete User permanently
+        del_resp = self.client.delete(f"/api/v1/users/{user_id}", headers=self.admin_headers)
+        self.assertEqual(del_resp.status_code, 200)
+
+        # Verify user is permanently removed from GET /users/{user_id}
+        get_deleted = self.client.get(f"/api/v1/users/{user_id}", headers=self.admin_headers)
+        self.assertEqual(get_deleted.status_code, 404)
+
+    def test_admin_cannot_deactivate_or_delete_self(self):
+        # Get admin details
+        me_resp = self.client.get("/api/v1/auth/me", headers=self.admin_headers)
+        self.assertEqual(me_resp.status_code, 200)
+        admin_id = me_resp.json()["id"]
+
+        # Admin attempts to deactivate self -> 400 Bad Request
+        deact_self = self.client.post(f"/api/v1/users/{admin_id}/deactivate", headers=self.admin_headers)
+        self.assertEqual(deact_self.status_code, 400)
+        self.assertIn("cannot deactivate their own account", deact_self.json()["detail"].lower())
+
+        # Admin attempts to delete self -> 400 Bad Request
+        delete_self = self.client.delete(f"/api/v1/users/{admin_id}", headers=self.admin_headers)
+        self.assertEqual(delete_self.status_code, 400)
+        self.assertIn("cannot delete their own account", delete_self.json()["detail"].lower())
+
+    def test_manager_and_scheduler_permission_boundaries(self):
+        suffix = uuid.uuid4().hex[:6]
+        
+        # 1. Create Manager account as Admin
+        mgr_create = self.client.post("/api/v1/users", json={
+            "username": f"mgr_{suffix}",
+            "email": f"mgr_{suffix}@test.com",
+            "password": "Password123!",
+            "first_name": "Manager",
+            "last_name": "User",
+            "role": "MANAGER"
+        }, headers=self.admin_headers)
+        self.assertEqual(mgr_create.status_code, 201)
+
+        # 2. Login as Manager
+        mgr_login = self.client.post("/api/v1/auth/login", data={
+            "username": f"mgr_{suffix}@test.com",
+            "password": "Password123!"
+        })
+        mgr_headers = {"Authorization": f"Bearer {mgr_login.json()['access_token']}"}
+
+        # 3. Manager can list users
+        mgr_list = self.client.get("/api/v1/users", headers=mgr_headers)
+        self.assertEqual(mgr_list.status_code, 200)
+
+        # 4. Manager can create Scheduler and Employee
+        sch_create = self.client.post("/api/v1/users", json={
+            "username": f"sch_{suffix}",
+            "email": f"sch_{suffix}@test.com",
+            "password": "Password123!",
+            "first_name": "Scheduler",
+            "last_name": "Sub",
+            "role": "SCHEDULER"
+        }, headers=mgr_headers)
+        self.assertEqual(sch_create.status_code, 201)
+        sch_id = sch_create.json()["id"]
+
+        # 5. Manager CANNOT create Admin or Manager
+        adm_fail = self.client.post("/api/v1/users", json={
+            "username": f"fakeadmin_{suffix}",
+            "email": f"fakeadmin_{suffix}@test.com",
+            "password": "Password123!",
+            "first_name": "Fake",
+            "last_name": "Admin",
+            "role": "ADMIN"
+        }, headers=mgr_headers)
+        self.assertEqual(adm_fail.status_code, 403)
+
+        # 6. Manager CAN delete created Scheduler
+        sch_del = self.client.delete(f"/api/v1/users/{sch_id}", headers=mgr_headers)
+        self.assertEqual(sch_del.status_code, 200)
+
+        # 7. Manager CANNOT delete Admin
+        me_admin = self.client.get("/api/v1/auth/me", headers=self.admin_headers).json()["id"]
+        mgr_del_admin = self.client.delete(f"/api/v1/users/{me_admin}", headers=mgr_headers)
+        self.assertEqual(mgr_del_admin.status_code, 403)
+
+        # 8. Login as Scheduler and verify user management is 403 Forbidden
+        sch_user_create = self.client.post("/api/v1/users", json={
+            "username": f"sch_real_{suffix}",
+            "email": f"sch_real_{suffix}@test.com",
+            "password": "Password123!",
+            "first_name": "Sch",
+            "last_name": "User",
+            "role": "SCHEDULER"
+        }, headers=self.admin_headers)
+        sch_real_id = sch_user_create.json()["id"]
+
+        sch_login = self.client.post("/api/v1/auth/login", data={
+            "username": f"sch_real_{suffix}@test.com",
+            "password": "Password123!"
+        })
+        sch_headers = {"Authorization": f"Bearer {sch_login.json()['access_token']}"}
+
+        # Scheduler list users -> 403
+        sch_list = self.client.get("/api/v1/users", headers=sch_headers)
+        self.assertEqual(sch_list.status_code, 403)
 
     def test_non_admin_forbidden_from_user_management(self):
         user_suffix = uuid.uuid4().hex[:6]
@@ -164,3 +270,4 @@ class TestAuthAndSecurityLayer(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+

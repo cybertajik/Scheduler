@@ -1,4 +1,5 @@
-from app.models.enums import UserRole, ScheduleStatus, ConstraintType, AssignmentSource
+from app.models.enums import UserRole, ScheduleStatus, ConstraintType, AssignmentSource, ContractType
+from app.models.organization import Organization
 from app.models.user import User
 from app.models.department import Department
 from app.models.worker import Worker, Skill, WorkerSkill
@@ -12,6 +13,8 @@ __all__ = [
     "ScheduleStatus",
     "ConstraintType",
     "AssignmentSource",
+    "ContractType",
+    "Organization",
     "User",
     "Department",
     "Worker",

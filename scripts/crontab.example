@@ -1,0 +1,15 @@
+# Staff Scheduler — Recommended Production Crontab Configuration
+# Install on host server with: crontab -e
+
+SHELL=/bin/bash
+PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+PROJECT_DIR=/home/ad/app
+
+# 1. Nightly Database Backup at 02:00 AM (Daily Retention 30 days)
+0 2 * * * cd /home/ad/app && ./scripts/backup_db.sh >> /var/log/scheduler_backup.log 2>&1
+
+# 2. Weekly Full System & Application Archive on Sunday at 03:00 AM
+0 3 * * 0 cd /home/ad/app && ./scripts/backup_all.sh >> /var/log/scheduler_backup_all.log 2>&1
+
+# 3. Nightly Log Rotation & Retention Cleanup at 04:00 AM
+0 4 * * * cd /home/ad/app && ./scripts/prune_backups.sh >> /var/log/scheduler_prune.log 2>&1

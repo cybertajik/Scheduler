@@ -9,8 +9,13 @@ services:
       POSTGRES_DB: ${POSTGRES_DB:-scheduler}
     volumes:
       - postgres_data:/var/lib/postgresql/data
-    ports:
-      - "5432:5432"
+    networks:
+      - scheduler_net
+    shm_size: '2gb'
+    deploy:
+      resources:
+        limits:
+          memory: 4096M
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-postgres} -d ${POSTGRES_DB:-scheduler}"]
       interval: 10s
@@ -26,10 +31,15 @@ services:
     image: redis:7-alpine
     container_name: scheduler_redis
     restart: always
-    ports:
-      - "6379:6379"
+    command: redis-server --appendonly yes --maxmemory 2gb --maxmemory-policy allkeys-lru
     volumes:
       - redis_data:/data
+    networks:
+      - scheduler_net
+    deploy:
+      resources:
+        limits:
+          memory: 2048M
     healthcheck:
       test: ["CMD", "redis-cli", "ping"]
       interval: 10s
@@ -57,13 +67,17 @@ services:
       - REDIS_URL=${REDIS_URL:-redis://redis:6379/0}
       - CELERY_BROKER_URL=${CELERY_BROKER_URL:-redis://redis:6379/0}
       - CELERY_RESULT_BACKEND=${CELERY_RESULT_BACKEND:-redis://redis:6379/0}
-    ports:
-      - "8000:8000"
+    networks:
+      - scheduler_net
     depends_on:
       postgres:
         condition: service_healthy
       redis:
         condition: service_healthy
+    deploy:
+      resources:
+        limits:
+          memory: 4096M
     healthcheck:
       test: ["CMD-SHELL", "curl -f http://localhost:8000/api/v1/health || exit 1"]
       interval: 15s
@@ -92,11 +106,17 @@ services:
       - REDIS_URL=${REDIS_URL:-redis://redis:6379/0}
       - CELERY_BROKER_URL=${CELERY_BROKER_URL:-redis://redis:6379/0}
       - CELERY_RESULT_BACKEND=${CELERY_RESULT_BACKEND:-redis://redis:6379/0}
+    networks:
+      - scheduler_net
     depends_on:
       backend:
         condition: service_healthy
       redis:
         condition: service_healthy
+    deploy:
+      resources:
+        limits:
+          memory: 8192M
     logging:
       driver: "json-file"
       options:
@@ -120,6 +140,8 @@ services:
       - REDIS_URL=${REDIS_URL:-redis://redis:6379/0}
       - CELERY_BROKER_URL=${CELERY_BROKER_URL:-redis://redis:6379/0}
       - CELERY_RESULT_BACKEND=${CELERY_RESULT_BACKEND:-redis://redis:6379/0}
+    networks:
+      - scheduler_net
     depends_on:
       celery_worker:
         condition: service_started
@@ -137,14 +159,24 @@ services:
     restart: always
     ports:
       - "80:80"
+    networks:
+      - scheduler_net
     depends_on:
       backend:
         condition: service_healthy
+    deploy:
+      resources:
+        limits:
+          memory: 1024M
     logging:
       driver: "json-file"
       options:
         max-size: "20m"
         max-file: "5"
+
+networks:
+  scheduler_net:
+    driver: bridge
 
 volumes:
   postgres_data:

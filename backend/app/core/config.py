@@ -25,7 +25,6 @@ class Settings(BaseSettings):
         "http://localhost:3000",
         "http://localhost:5173",
         "http://192.168.0.5",
-        "*"
     ]
 
     model_config = SettingsConfigDict(env_file=".env", case_sensitive=True, extra="allow")

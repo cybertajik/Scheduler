@@ -1,10 +1,12 @@
 import enum
 
 class UserRole(str, enum.Enum):
-    ADMIN = "ADMIN"
-    SCHEDULER = "SCHEDULER"
-    MANAGER = "MANAGER"
-    EMPLOYEE = "EMPLOYEE"
+    SUPER_ADMIN = "SUPER_ADMIN"  # Product Owner
+    ORG_ADMIN = "ORG_ADMIN"      # Top Manager of Organization
+    ADMIN = "ADMIN"              # System / Org Admin legacy
+    SCHEDULER = "SCHEDULER"      # Schedule Manager
+    MANAGER = "MANAGER"          # Manager
+    EMPLOYEE = "EMPLOYEE"        # Employee
 
 class ScheduleStatus(str, enum.Enum):
     DRAFT = "DRAFT"
@@ -26,3 +28,7 @@ class ConstraintType(str, enum.Enum):
 class AssignmentSource(str, enum.Enum):
     SOLVER = "SOLVER"
     MANUAL = "MANUAL"
+
+class ContractType(str, enum.Enum):
+    HOURLY = "HOURLY"
+    SALARY = "SALARY"

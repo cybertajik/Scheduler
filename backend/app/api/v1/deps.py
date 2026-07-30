@@ -7,6 +7,22 @@ from app.models import User, UserRole
 
 # Declarative Role-Permission Mapping Matrix
 ROLE_PERMISSIONS = {
+    UserRole.SUPER_ADMIN: {
+        "orgs:manage", "users:create", "users:read", "users:update", "users:delete",
+        "schedules:create", "schedules:read", "schedules:update", "schedules:delete", "schedules:generate", "schedules:publish",
+        "workers:create", "workers:read", "workers:update", "workers:delete",
+        "shifts:create", "shifts:read", "shifts:update", "shifts:delete",
+        "rules:create", "rules:read", "rules:update", "rules:delete",
+        "assignments:manage"
+    },
+    UserRole.ORG_ADMIN: {
+        "users:create", "users:read", "users:update", "users:delete",
+        "schedules:create", "schedules:read", "schedules:update", "schedules:delete", "schedules:generate", "schedules:publish",
+        "workers:create", "workers:read", "workers:update", "workers:delete",
+        "shifts:create", "shifts:read", "shifts:update", "shifts:delete",
+        "rules:create", "rules:read", "rules:update", "rules:delete",
+        "assignments:manage"
+    },
     UserRole.ADMIN: {
         "users:create", "users:read", "users:update", "users:delete",
         "schedules:create", "schedules:read", "schedules:update", "schedules:delete", "schedules:generate", "schedules:publish",
@@ -23,6 +39,7 @@ ROLE_PERMISSIONS = {
         "assignments:manage"
     },
     UserRole.MANAGER: {
+        "users:create", "users:read", "users:update", "users:delete",
         "schedules:read", "schedules:publish",
         "workers:read",
         "shifts:read",
@@ -77,7 +94,10 @@ def require_permission(permission: str) -> Callable:
     return permission_checker
 
 # Standardized Shorthand Role Dependencies
-require_admin = require_role(UserRole.ADMIN)
-admin_only = require_role(UserRole.ADMIN)
-scheduler_or_admin = require_role(UserRole.ADMIN, UserRole.SCHEDULER)
-manager_or_higher = require_role(UserRole.ADMIN, UserRole.SCHEDULER, UserRole.MANAGER)
+require_super_admin = require_role(UserRole.SUPER_ADMIN, UserRole.ADMIN)
+require_org_admin = require_role(UserRole.SUPER_ADMIN, UserRole.ORG_ADMIN, UserRole.ADMIN)
+require_admin = require_role(UserRole.SUPER_ADMIN, UserRole.ORG_ADMIN, UserRole.ADMIN)
+admin_only = require_role(UserRole.SUPER_ADMIN, UserRole.ORG_ADMIN, UserRole.ADMIN)
+manager_or_admin = require_role(UserRole.SUPER_ADMIN, UserRole.ORG_ADMIN, UserRole.ADMIN, UserRole.MANAGER)
+scheduler_or_admin = require_role(UserRole.SUPER_ADMIN, UserRole.ORG_ADMIN, UserRole.ADMIN, UserRole.SCHEDULER)
+manager_or_higher = require_role(UserRole.SUPER_ADMIN, UserRole.ORG_ADMIN, UserRole.ADMIN, UserRole.SCHEDULER, UserRole.MANAGER)

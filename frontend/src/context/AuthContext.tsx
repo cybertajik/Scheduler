@@ -66,13 +66,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   const role = user?.role || null;
-  const isAdmin = role === 'ADMIN';
+  const isAdmin = role === 'SUPER_ADMIN' || role === 'ORG_ADMIN' || role === 'ADMIN';
   const isScheduler = role === 'SCHEDULER';
   const isManager = role === 'MANAGER';
 
   const canManageSchedules = isAdmin || isScheduler;
   const canManageWorkers = isAdmin || isScheduler;
-  const canManageUsers = isAdmin;
+  const canManageUsers = isAdmin || isManager;
 
   return (
     <AuthContext.Provider

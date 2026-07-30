@@ -103,3 +103,20 @@ def create_worker_rule(
     db.commit()
     db.refresh(constraint)
     return constraint
+
+@router.delete("/{worker_id}/rules/{rule_id}")
+def delete_worker_rule(
+    worker_id: uuid.UUID,
+    rule_id: uuid.UUID,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    rule = db.query(WorkerConstraint).filter(
+        WorkerConstraint.id == rule_id,
+        WorkerConstraint.worker_id == worker_id
+    ).first()
+    if not rule:
+        raise HTTPException(status_code=404, detail="Constraint rule not found")
+    db.delete(rule)
+    db.commit()
+    return {"message": "Constraint rule deleted successfully"}
