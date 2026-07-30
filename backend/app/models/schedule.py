@@ -10,6 +10,9 @@ from app.models.enums import ScheduleStatus, AssignmentSource
 
 class Schedule(Base, UUIDPrimaryKeyMixin, TimestampMixin):
     __tablename__ = "schedules"
+    __table_args__ = (
+        UniqueConstraint("year", "month", name="uq_schedule_year_month"),
+    )
 
     month: Mapped[int] = mapped_column(Integer, nullable=False)
     year: Mapped[int] = mapped_column(Integer, nullable=False)

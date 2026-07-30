@@ -39,6 +39,7 @@ ROLE_PERMISSIONS = {
         "assignments:manage"
     },
     UserRole.MANAGER: {
+        "users:create", "users:read", "users:update", "users:delete",
         "schedules:read", "schedules:publish",
         "workers:read",
         "shifts:read",
@@ -97,5 +98,6 @@ require_super_admin = require_role(UserRole.SUPER_ADMIN, UserRole.ADMIN)
 require_org_admin = require_role(UserRole.SUPER_ADMIN, UserRole.ORG_ADMIN, UserRole.ADMIN)
 require_admin = require_role(UserRole.SUPER_ADMIN, UserRole.ORG_ADMIN, UserRole.ADMIN)
 admin_only = require_role(UserRole.SUPER_ADMIN, UserRole.ORG_ADMIN, UserRole.ADMIN)
+manager_or_admin = require_role(UserRole.SUPER_ADMIN, UserRole.ORG_ADMIN, UserRole.ADMIN, UserRole.MANAGER)
 scheduler_or_admin = require_role(UserRole.SUPER_ADMIN, UserRole.ORG_ADMIN, UserRole.ADMIN, UserRole.SCHEDULER)
 manager_or_higher = require_role(UserRole.SUPER_ADMIN, UserRole.ORG_ADMIN, UserRole.ADMIN, UserRole.SCHEDULER, UserRole.MANAGER)

@@ -17,9 +17,24 @@ html.light body {
   color: #0f172a !important;
 }
 
+html.light aside {
+  background-color: #ffffff !important;
+  border-color: #e2e8f0 !important;
+}
+
+/* Active Sidebar Link Contrast in Light Mode */
+html.light aside a.bg-blue-600\/10,
+html.light aside a.bg-blue-600\/10 *,
+html.light aside a.bg-blue-600\/10 span,
+html.light aside .text-blue-400 {
+  color: #1d4ed8 !important;
+  font-weight: 700 !important;
+}
+
 html.light .bg-slate-900 {
   background-color: #ffffff !important;
   border-color: #e2e8f0 !important;
+  color: #0f172a !important;
   box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -2px rgba(0, 0, 0, 0.05) !important;
 }
 
@@ -29,21 +44,58 @@ html.light .bg-slate-950\/60,
 html.light .bg-slate-950\/80 {
   background-color: #f1f5f9 !important;
   border-color: #cbd5e1 !important;
+  color: #0f172a !important;
 }
 
 html.light .bg-slate-800,
 html.light .bg-slate-800\/30,
 html.light .bg-slate-800\/50,
-html.light .bg-slate-800\/60 {
+html.light .bg-slate-800\/60,
+html.light .bg-slate-800\/80 {
   background-color: #f8fafc !important;
   border-color: #cbd5e1 !important;
+  color: #1e293b !important;
+}
+
+/* Excel Roster Table Rows in Light Mode */
+html.light tr.bg-slate-900\/40,
+html.light tr.bg-slate-900\/40 td,
+html.light .bg-slate-900\/40 {
+  background-color: #ffffff !important;
+  color: #0f172a !important;
 }
 
 html.light .border-slate-800,
 html.light .border-slate-700,
 html.light .border-slate-800\/60,
 html.light .border-slate-800\/80 {
-  border-color: #e2e8f0 !important;
+  border-color: #cbd5e1 !important;
+}
+
+/* Light Mode Text Contrast Rules */
+html.light .text-white {
+  color: #0f172a !important;
+}
+
+/* Preserve White Text on Dark & Gradient Buttons/Badges in Light Mode */
+html.light button.bg-indigo-600,
+html.light button.bg-indigo-600 *,
+html.light button.bg-indigo-600 span,
+html.light .bg-indigo-600,
+html.light .bg-indigo-600 *,
+html.light button.bg-blue-600,
+html.light button.bg-blue-600 *,
+html.light .bg-blue-600,
+html.light .bg-blue-600 *,
+html.light button.bg-emerald-600,
+html.light button.bg-emerald-600 *,
+html.light .bg-emerald-600,
+html.light .bg-emerald-600 *,
+html.light button.bg-gradient-to-r,
+html.light button.bg-gradient-to-r *,
+html.light .bg-gradient-to-r,
+html.light .bg-gradient-to-r * {
+  color: #ffffff !important;
 }
 
 html.light .text-slate-100,
@@ -60,6 +112,45 @@ html.light .text-slate-500 {
   color: #64748b !important;
 }
 
+/* Light Mode Soft Accent Text Overrides */
+html.light .text-emerald-200,
+html.light .text-emerald-300 {
+  color: #047857 !important;
+}
+
+html.light .text-blue-200,
+html.light .text-blue-300,
+html.light .text-blue-400 {
+  color: #1d4ed8 !important;
+}
+
+html.light .text-amber-200,
+html.light .text-amber-300 {
+  color: #b45309 !important;
+}
+
+html.light .text-rose-100,
+html.light .text-rose-200,
+html.light .text-rose-300 {
+  color: #be123c !important;
+}
+
+html.light .bg-emerald-950\/20 {
+  background-color: #ecfdf5 !important;
+  border-color: #a7f3d0 !important;
+}
+
+html.light .bg-blue-950\/20,
+html.light .bg-blue-950\/40 {
+  background-color: #eff6ff !important;
+  border-color: #bfdbfe !important;
+}
+
+html.light .bg-rose-950\/30 {
+  background-color: #fff1f2 !important;
+  border-color: #fecdd3 !important;
+}
+
 html.light input,
 html.light select,
 html.light textarea {
@@ -73,7 +164,7 @@ html.light textarea::placeholder {
   color: #94a3b8 !important;
 }
 
-/* FullCalendar Dark Theme Overrides */
+/* FullCalendar Theme & Light Mode Overrides */
 .fc {
   --fc-border-color: #1e293b;
   --fc-button-bg-color: #1e293b;
@@ -92,6 +183,34 @@ html.light .fc {
   --fc-button-hover-bg-color: #e2e8f0;
   --fc-button-active-bg-color: #2563eb;
   --fc-button-active-border-color: #2563eb;
+  --fc-button-text-color: #0f172a;
+}
+
+html.light .fc .fc-button-primary,
+html.light .fc .fc-button-primary:not(.fc-button-active) {
+  background-color: #f1f5f9 !important;
+  border-color: #cbd5e1 !important;
+  color: #0f172a !important;
+}
+
+html.light .fc .fc-button-primary .fc-icon,
+html.light .fc .fc-button-primary .fc-icon::before,
+html.light .fc .fc-button-primary span {
+  color: #0f172a !important;
+}
+
+html.light .fc .fc-button-primary:hover {
+  background-color: #e2e8f0 !important;
+  color: #0f172a !important;
+}
+
+html.light .fc .fc-button-active,
+html.light .fc .fc-button-active .fc-icon,
+html.light .fc .fc-button-active .fc-icon::before,
+html.light .fc .fc-button-active span {
+  background-color: #2563eb !important;
+  border-color: #2563eb !important;
+  color: #ffffff !important;
 }
 
 .fc .fc-toolbar-title {
@@ -101,7 +220,7 @@ html.light .fc {
 }
 
 html.light .fc .fc-toolbar-title {
-  color: #0f172a;
+  color: #0f172a !important;
 }
 
 .fc .fc-col-header-cell-cushion,
@@ -114,7 +233,7 @@ html.light .fc .fc-toolbar-title {
 
 html.light .fc .fc-col-header-cell-cushion,
 html.light .fc .fc-daygrid-day-number {
-  color: #475569;
+  color: #475569 !important;
 }
 
 .fc .fc-daygrid-day-number:hover {
@@ -136,3 +255,5 @@ html.light .fc-theme-standard td, html.light .fc-theme-standard th {
   font-weight: 600;
   cursor: pointer;
 }
+
+

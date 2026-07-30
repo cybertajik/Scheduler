@@ -72,7 +72,7 @@ function coverageColor(pct: number) {
 }
 
 // Vertical bar chart — daily coverage
-function DailyCoverageChart({ days }: { days: DailyDay[] }) {
+const DailyCoverageChart = React.memo(({ days }: { days: DailyDay[] }) => {
   const W = 900, H = 220, PAD = { top: 10, right: 10, bottom: 36, left: 40 };
   const chartW = W - PAD.left - PAD.right;
   const chartH = H - PAD.top - PAD.bottom;
@@ -120,7 +120,7 @@ function DailyCoverageChart({ days }: { days: DailyDay[] }) {
       })}
     </svg>
   );
-}
+});
 
 // Horizontal bar chart — worker load
 function WorkerLoadChart({ workers, avg }: { workers: WorkerLoad[]; avg: number }) {

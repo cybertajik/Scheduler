@@ -13,15 +13,20 @@ import { NotificationToast, NotificationType } from '../components/Common/Notifi
 import { useScheduleHistory } from '../hooks/useScheduleHistory';
 import { EditorToolbar } from '../components/ScheduleEditor/EditorToolbar';
 import { ConflictSidePanel } from '../components/ScheduleEditor/ConflictSidePanel';
+import { ExcelRosterView } from '../components/ScheduleEditor/ExcelRosterView';
 import { WorkerDetailDrawer } from '../components/ScheduleEditor/WorkerDetailDrawer';
 import { ShiftContextMenu } from '../components/ScheduleEditor/ShiftContextMenu';
 
+import { useLanguage } from '../context/LanguageContext';
+
 export const ScheduleDetailPage: React.FC = () => {
+  const { t } = useLanguage();
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const calendarRef = useRef<any>(null);
 
   const [schedule, setSchedule] = useState<Schedule | null>(null);
+  const [allSchedules, setAllSchedules] = useState<Schedule[]>([]);
   const [workers, setWorkers] = useState<Worker[]>([]);
   const [coverage, setCoverage] = useState<CoverageSummary | null>(null);
   const [conflicts, setConflicts] = useState<ConflictReport | null>(null);
@@ -29,6 +34,17 @@ export const ScheduleDetailPage: React.FC = () => {
   const [solving, setSolving] = useState(false);
   const [error, setError] = useState('');
   const [toast, setToast] = useState<{ type: NotificationType; message: string } | null>(null);
+
+  // View Mode: 'calendar' (FullCalendar) | 'excel' (Table Roster View) - Persisted in localStorage
+  const [viewMode, setViewMode] = useState<'calendar' | 'excel'>(() => {
+    const saved = localStorage.getItem('schedule_view_mode');
+    return saved === 'excel' || saved === 'calendar' ? saved : 'calendar';
+  });
+
+  const handleViewModeChange = (mode: 'calendar' | 'excel') => {
+    setViewMode(mode);
+    localStorage.setItem('schedule_view_mode', mode);
+  };
 
   // Side Panels & Drawers
   const [isConflictPanelOpen, setIsConflictPanelOpen] = useState(false);
@@ -57,16 +73,18 @@ export const ScheduleDetailPage: React.FC = () => {
     if (!id) return;
     try {
       setLoading(true);
-      const [sched, wrks, cov, conf] = await Promise.all([
+      const [sched, wrks, cov, conf, allScheds] = await Promise.all([
         scheduleService.getScheduleDetail(id),
         workerService.getWorkers(true),
         scheduleService.getCoverage(id).catch(() => null),
         scheduleService.getConflicts(id).catch(() => null),
+        scheduleService.getSchedules().catch(() => []),
       ]);
       setSchedule(sched);
       setWorkers(wrks);
       setCoverage(cov);
       setConflicts(conf);
+      setAllSchedules(allScheds);
     } catch (err: any) {
       setError(err.response?.data?.detail || 'Failed to load schedule details');
     } finally {
@@ -77,6 +95,37 @@ export const ScheduleDetailPage: React.FC = () => {
   useEffect(() => {
     loadData();
   }, [loadData]);
+
+  // Month Navigation Handlers
+  const handlePrevMonth = () => {
+    if (!schedule) return;
+    const prevMonth = schedule.month === 1 ? 12 : schedule.month - 1;
+    const prevYear = schedule.month === 1 ? schedule.year - 1 : schedule.year;
+    const match = allSchedules.find((s) => s.month === prevMonth && s.year === prevYear);
+    if (match) {
+      navigate(`/schedules/${match.id}`);
+    } else {
+      setToast({
+        type: 'info',
+        message: `No schedule period exists for ${new Date(prevYear, prevMonth - 1).toLocaleString('default', { month: 'long' })} ${prevYear}.`,
+      });
+    }
+  };
+
+  const handleNextMonth = () => {
+    if (!schedule) return;
+    const nextMonth = schedule.month === 12 ? 1 : schedule.month + 1;
+    const nextYear = schedule.month === 12 ? schedule.year + 1 : schedule.year;
+    const match = allSchedules.find((s) => s.month === nextMonth && s.year === nextYear);
+    if (match) {
+      navigate(`/schedules/${match.id}`);
+    } else {
+      setToast({
+        type: 'info',
+        message: `No schedule period exists for ${new Date(nextYear, nextMonth - 1).toLocaleString('default', { month: 'long' })} ${nextYear}.`,
+      });
+    }
+  };
 
   // Keyboard Shortcuts for Undo (Ctrl+Z) & Redo (Ctrl+Y / Ctrl+Shift+Z)
   useEffect(() => {
@@ -298,15 +347,19 @@ export const ScheduleDetailPage: React.FC = () => {
 
   return (
     <div className="space-y-6">
-      {/* Editor Main Toolbar */}
+      {/* Editor Main Toolbar with Big View Switcher & Month Navigation */}
       <EditorToolbar
-        scheduleTitle={`Schedule: ${new Date(schedule.year, schedule.month - 1).toLocaleString('default', { month: 'long' })} ${schedule.year}`}
+        scheduleTitle={`${new Date(schedule.year, schedule.month - 1).toLocaleString('default', { month: 'long' })} ${schedule.year}`}
         status={schedule.status}
         canUndo={canUndo}
         canRedo={canRedo}
+        viewMode={viewMode}
+        onViewModeChange={handleViewModeChange}
+        onPrevMonth={handlePrevMonth}
+        onNextMonth={handleNextMonth}
         onUndo={undo}
         onRedo={redo}
-        onNavigateBack={() => navigate('/schedules')}
+        onNavigateBack={() => navigate('/schedules?view=list')}
         onRunSolver={handleTriggerSolver}
         onPublish={handlePublishSchedule}
         onToggleConflictPanel={() => setIsConflictPanelOpen((prev) => !prev)}
@@ -322,7 +375,7 @@ export const ScheduleDetailPage: React.FC = () => {
       {coverage && (
         <div className="p-6 bg-slate-900 border border-slate-800 rounded-2xl grid grid-cols-1 md:grid-cols-4 gap-6 shadow-xl">
           <div>
-            <span className="text-xs text-slate-500 block uppercase font-semibold">Fulfillment Coverage</span>
+            <span className="text-xs text-slate-500 block uppercase font-semibold">{t('fulfillment_coverage')}</span>
             <div className="flex items-baseline space-x-2 mt-1">
               <span className="text-2xl font-extrabold text-slate-100">{coverage.coverage_percentage}%</span>
               <span className="text-xs text-slate-400">({coverage.total_assigned_workers} / {coverage.total_required_workers})</span>
@@ -336,17 +389,17 @@ export const ScheduleDetailPage: React.FC = () => {
           </div>
 
           <div>
-            <span className="text-xs text-slate-500 block uppercase font-semibold">Total Shifts Needed</span>
+            <span className="text-xs text-slate-500 block uppercase font-semibold">{t('total_shifts_needed')}</span>
             <span className="text-2xl font-extrabold text-slate-100 mt-1 block">{coverage.total_required_workers}</span>
           </div>
 
           <div>
-            <span className="text-xs text-slate-500 block uppercase font-semibold">Assigned Staff</span>
+            <span className="text-xs text-slate-500 block uppercase font-semibold">{t('assigned_staff')}</span>
             <span className="text-2xl font-extrabold text-emerald-400 mt-1 block">{coverage.total_assigned_workers}</span>
           </div>
 
           <div>
-            <span className="text-xs text-slate-500 block uppercase font-semibold">Constraint Conflicts</span>
+            <span className="text-xs text-slate-500 block uppercase font-semibold">{t('constraint_conflicts')}</span>
             <div className="flex items-center space-x-2 mt-1">
               <span className={`text-2xl font-extrabold ${conflicts?.hard_conflicts_count ? 'text-rose-400' : 'text-slate-100'}`}>
                 {conflicts?.hard_conflicts_count || 0} Hard
@@ -356,75 +409,103 @@ export const ScheduleDetailPage: React.FC = () => {
         </div>
       )}
 
-      {/* Main Workspace Layout (FullCalendar + Side Panels) */}
-      <div className="flex relative items-start gap-4">
-        {/* FullCalendar Interactive Container */}
-        <div className="flex-1 bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-xl overflow-hidden">
-          <FullCalendar
-            ref={calendarRef}
-            plugins={[dayGridPlugin, timeGridPlugin, interactionPlugin]}
-            initialView="dayGridMonth"
-            editable={true}
-            headerToolbar={{
-              left: 'prev,next today',
-              center: 'title',
-              right: 'dayGridMonth,timeGridWeek',
-            }}
-            events={events}
-            eventDrop={handleEventDrop}
-            eventClick={(info) => {
-              const props = info.event.extendedProps;
-              if (props.unassigned) {
-                setSelectedShiftInstanceId(props.shiftInstanceId);
+      {/* View Mode 1: Excel / Duty Roster Table View (Matching Submitted Reference Document) */}
+      {viewMode === 'excel' ? (
+        <div className="flex relative items-start gap-4">
+          <div className="flex-1 overflow-hidden">
+            <ExcelRosterView
+              schedule={schedule}
+              workers={workers}
+              onAssignClick={(shiftInstanceId) => {
+                setSelectedShiftInstanceId(shiftInstanceId);
                 setIsAssignModalOpen(true);
-              } else if (props.worker) {
-                setSelectedWorker(props.worker);
+              }}
+              onUnassignClick={(assignmentId) => {
+                handleDeleteAssignment(assignmentId);
+              }}
+              onInspectWorker={(worker) => {
+                setSelectedWorker(worker);
                 setIsWorkerDrawerOpen(true);
-              }
-            }}
-            eventDidMount={(info) => {
-              // Right Click Context Menu Handler
-              info.el.oncontextmenu = (e) => {
-                e.preventDefault();
-                const props = info.event.extendedProps;
-                if (!props.unassigned) {
-                  setContextMenu({
-                    x: e.clientX,
-                    y: e.clientY,
-                    assignmentId: info.event.id,
-                    shiftInstanceId: props.shiftInstanceId,
-                    workerId: props.workerId,
-                    isLocked: props.locked,
-                  });
-                }
-              };
-            }}
-            height="720px"
-            aspectRatio={1.6}
+              }}
+            />
+          </div>
+
+          <WorkerDetailDrawer
+            isOpen={isWorkerDrawerOpen}
+            onClose={() => setIsWorkerDrawerOpen(false)}
+            worker={selectedWorker}
+            assignedHours={totalAssignedHours}
+            onConstraintUpdated={loadData}
           />
         </div>
+      ) : (
+        /* View Mode 2: Classic FullCalendar Interactive Workspace */
+        <div className="flex relative items-start gap-4">
+          <div className="flex-1 bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-xl overflow-hidden">
+            <FullCalendar
+              ref={calendarRef}
+              plugins={[dayGridPlugin, timeGridPlugin, interactionPlugin]}
+              initialView="dayGridMonth"
+              editable={true}
+              headerToolbar={{
+                left: 'prev,next today',
+                center: 'title',
+                right: 'dayGridMonth,timeGridWeek',
+              }}
+              events={events}
+              eventDrop={handleEventDrop}
+              eventClick={(info) => {
+                const props = info.event.extendedProps;
+                if (props.unassigned) {
+                  setSelectedShiftInstanceId(props.shiftInstanceId);
+                  setIsAssignModalOpen(true);
+                } else if (props.worker) {
+                  setSelectedWorker(props.worker);
+                  setIsWorkerDrawerOpen(true);
+                }
+              }}
+              eventDidMount={(info) => {
+                info.el.oncontextmenu = (e) => {
+                  e.preventDefault();
+                  const props = info.event.extendedProps;
+                  if (!props.unassigned) {
+                    setContextMenu({
+                      x: e.clientX,
+                      y: e.clientY,
+                      assignmentId: info.event.id,
+                      shiftInstanceId: props.shiftInstanceId,
+                      workerId: props.workerId,
+                      isLocked: props.locked,
+                    });
+                  }
+                };
+              }}
+              height="720px"
+              aspectRatio={1.6}
+            />
+          </div>
 
-        {/* Live Conflict Side Panel */}
-        <ConflictSidePanel
-          isOpen={isConflictPanelOpen}
-          onClose={() => setIsConflictPanelOpen(false)}
-          report={conflicts}
-          onSelectConflict={(conflict: ConflictItem) => {
-            if (conflict.date && calendarRef.current) {
-              const calendarApi = calendarRef.current.getApi();
-              calendarApi.gotoDate(conflict.date);
-            }
-          }}
-        />
+          <ConflictSidePanel
+            isOpen={isConflictPanelOpen}
+            onClose={() => setIsConflictPanelOpen(false)}
+            report={conflicts}
+            onSelectConflict={(conflict: ConflictItem) => {
+              if (conflict.date && calendarRef.current) {
+                const calendarApi = calendarRef.current.getApi();
+                calendarApi.gotoDate(conflict.date);
+              }
+            }}
+          />
 
-        {/* Worker Details Drawer */}
-        <WorkerDetailDrawer
-          isOpen={isWorkerDrawerOpen}
-          onClose={() => setIsWorkerDrawerOpen(false)}
-          worker={selectedWorker}
-          assignedHours={totalAssignedHours}
-        />
-      </div>
+          <WorkerDetailDrawer
+            isOpen={isWorkerDrawerOpen}
+            onClose={() => setIsWorkerDrawerOpen(false)}
+            worker={selectedWorker}
+            assignedHours={totalAssignedHours}
+            onConstraintUpdated={loadData}
+          />
+        </div>
+      )}
 
       {/* Floating Context Menu */}
       {contextMenu && (

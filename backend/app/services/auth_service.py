@@ -15,7 +15,9 @@ from app.services.audit_service import AuditService
 class AuthService:
     @staticmethod
     def authenticate_user(db: Session, credentials: UserLogin, ip_address: Optional[str] = None) -> User:
-        user = db.query(User).filter(User.email == credentials.email).first()
+        user = db.query(User).filter(
+            (User.email == credentials.email) | (User.username == credentials.email)
+        ).first()
         if not user or not verify_password(credentials.password, user.password_hash):
             AuditService.log_action(
                 db, action="LOGIN_FAILURE", entity_type="User",
@@ -50,6 +52,13 @@ class AuthService:
     def create_user(db: Session, user_in: UserCreate, creator: Optional[User] = None) -> User:
         validate_password_complexity(user_in.password)
         
+        if creator and creator.role == UserRole.MANAGER:
+            if user_in.role not in [UserRole.SCHEDULER, UserRole.EMPLOYEE]:
+                raise HTTPException(
+                    status_code=status.HTTP_403_FORBIDDEN,
+                    detail="Managers can only create Schedulers and Employees"
+                )
+
         existing = db.query(User).filter(
             (User.email == user_in.email) | (User.username == user_in.username)
         ).first()
@@ -149,6 +158,19 @@ class AuthService:
     @staticmethod
     def update_user(db: Session, user_id: uuid.UUID, update_in: UserUpdate, admin: User) -> User:
         user = AuthService.get_user_by_id(db, user_id)
+        
+        if admin.role == UserRole.MANAGER:
+            if user.role not in [UserRole.SCHEDULER, UserRole.EMPLOYEE]:
+                raise HTTPException(
+                    status_code=status.HTTP_403_FORBIDDEN,
+                    detail="Managers can only update Schedulers and Employees"
+                )
+            if update_in.role and update_in.role not in [UserRole.SCHEDULER, UserRole.EMPLOYEE]:
+                raise HTTPException(
+                    status_code=status.HTTP_403_FORBIDDEN,
+                    detail="Managers can only assign Scheduler or Employee roles"
+                )
+
         update_data = update_in.model_dump(exclude_unset=True)
 
         for key, val in update_data.items():
@@ -166,6 +188,26 @@ class AuthService:
     @staticmethod
     def deactivate_user(db: Session, user_id: uuid.UUID, admin: User) -> User:
         user = AuthService.get_user_by_id(db, user_id)
+
+        admin_roles = [UserRole.SUPER_ADMIN, UserRole.ORG_ADMIN, UserRole.ADMIN]
+        if user.role in admin_roles:
+            if admin.id == user.id:
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail="Admin cannot deactivate their own account"
+                )
+            if admin.role not in admin_roles:
+                raise HTTPException(
+                    status_code=status.HTTP_403_FORBIDDEN,
+                    detail="Cannot deactivate Admin accounts"
+                )
+
+        if admin.role == UserRole.MANAGER and user.role not in [UserRole.SCHEDULER, UserRole.EMPLOYEE]:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Managers can only deactivate Schedulers and Employees"
+            )
+
         user.active = False
         db.commit()
         db.refresh(user)
@@ -175,3 +217,54 @@ class AuthService:
             user_id=admin.id, who=admin.full_name
         )
         return user
+
+    @staticmethod
+    def activate_user(db: Session, user_id: uuid.UUID, admin: User) -> User:
+        user = AuthService.get_user_by_id(db, user_id)
+
+        if admin.role == UserRole.MANAGER and user.role not in [UserRole.SCHEDULER, UserRole.EMPLOYEE]:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Managers can only activate Schedulers and Employees"
+            )
+
+        user.active = True
+        db.commit()
+        db.refresh(user)
+
+        AuditService.log_action(
+            db, action="USER_ENABLE", entity_type="User", entity_id=str(user.id),
+            user_id=admin.id, who=admin.full_name
+        )
+        return user
+
+    @staticmethod
+    def delete_user(db: Session, user_id: uuid.UUID, admin: User) -> None:
+        user = AuthService.get_user_by_id(db, user_id)
+
+        admin_roles = [UserRole.SUPER_ADMIN, UserRole.ORG_ADMIN, UserRole.ADMIN]
+        if user.role in admin_roles:
+            if admin.id == user.id:
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail="Admin cannot delete their own account"
+                )
+            if admin.role not in admin_roles:
+                raise HTTPException(
+                    status_code=status.HTTP_403_FORBIDDEN,
+                    detail="Cannot delete Admin accounts"
+                )
+
+        if admin.role == UserRole.MANAGER and user.role not in [UserRole.SCHEDULER, UserRole.EMPLOYEE]:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Managers can only delete Schedulers and Employees"
+            )
+
+        AuditService.log_action(
+            db, action="USER_DELETE", entity_type="User", entity_id=str(user.id),
+            user_id=admin.id, who=admin.full_name, old_value={"email": user.email, "username": user.username}
+        )
+
+        db.delete(user)
+        db.commit()

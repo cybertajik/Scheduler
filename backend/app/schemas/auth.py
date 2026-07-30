@@ -56,7 +56,7 @@ class UserResponse(BaseModel):
 
     id: uuid.UUID
     username: str
-    email: EmailStr
+    email: str
     first_name: str
     last_name: str
     role: UserRole

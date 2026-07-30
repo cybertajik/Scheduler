@@ -42,6 +42,17 @@ const AdminRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   return <Layout>{children}</Layout>;
 };
 
+const UserManagementRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  const { isAuthenticated, canManageUsers } = useAuth();
+  if (!isAuthenticated) {
+    return <Navigate to="/login" replace />;
+  }
+  if (!canManageUsers) {
+    return <Navigate to="/" replace />;
+  }
+  return <Layout>{children}</Layout>;
+};
+
 export function App() {
   return (
     <ThemeProvider>
@@ -134,9 +145,9 @@ export function App() {
               <Route
                 path="/users"
                 element={
-                  <AdminRoute>
+                  <UserManagementRoute>
                     <UsersManagementPage />
-                  </AdminRoute>
+                  </UserManagementRoute>
                 }
               />
               <Route

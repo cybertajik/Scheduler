@@ -1,6 +1,6 @@
-import React, { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { Calendar, Plus, Eye, Cpu, ArrowRight } from 'lucide-react';
+import React, { useEffect, useState, useCallback } from 'react';
+import { useNavigate, useSearchParams } from 'react-router-dom';
+import { Calendar, Plus, Eye, Cpu, ArrowRight, ListFilter } from 'lucide-react';
 import { scheduleService } from '../services/apiServices';
 import { Schedule } from '../types';
 import { StatusBadge } from '../components/Common/StatusBadge';
@@ -14,25 +14,42 @@ export const SchedulesPage: React.FC = () => {
   const [error, setError] = useState('');
   const [isModalOpen, setIsModalOpen] = useState(false);
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+
+  const isListView = searchParams.get('view') === 'list';
 
   const [month, setMonth] = useState<number>(new Date().getMonth() + 1);
   const [year, setYear] = useState<number>(new Date().getFullYear());
 
-  const loadSchedules = async () => {
+  const loadSchedules = useCallback(async () => {
     try {
       setLoading(true);
       const data = await scheduleService.getSchedules();
       setSchedules(data);
+
+      // Default: Open Interactive View for current month schedule automatically
+      if (!isListView && data.length > 0) {
+        const now = new Date();
+        const currentMonth = now.getMonth() + 1;
+        const currentYear = now.getFullYear();
+
+        const currentSched = data.find((s) => s.month === currentMonth && s.year === currentYear) || data[0];
+
+        if (currentSched) {
+          navigate(`/schedules/${currentSched.id}`, { replace: true });
+          return;
+        }
+      }
     } catch (err: any) {
       setError(err.response?.data?.detail || 'Failed to fetch schedules');
     } finally {
       setLoading(false);
     }
-  };
+  }, [isListView, navigate]);
 
   useEffect(() => {
     loadSchedules();
-  }, []);
+  }, [loadSchedules]);
 
   const handleCreateSchedule = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -79,31 +96,56 @@ export const SchedulesPage: React.FC = () => {
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-800/60">
-                {schedules.map((sched) => (
-                  <tr key={sched.id} className="hover:bg-slate-800/30 transition-colors">
-                    <td className="px-6 py-4 font-bold text-slate-100">
-                      {new Date(sched.year, sched.month - 1).toLocaleString('default', { month: 'long' })} {sched.year}
-                    </td>
-                    <td className="px-6 py-4">
-                      <StatusBadge status={sched.status} type="schedule" />
-                    </td>
-                    <td className="px-6 py-4 text-xs font-mono text-slate-400">
-                      {sched.generated_at ? new Date(sched.generated_at).toLocaleString() : 'N/A'}
-                    </td>
-                    <td className="px-6 py-4 text-xs font-mono text-slate-400">
-                      {sched.solver_score || 'Not executed'}
-                    </td>
-                    <td className="px-6 py-4 text-right">
-                      <button
-                        onClick={() => navigate(`/schedules/${sched.id}`)}
-                        className="inline-flex items-center space-x-1 text-xs font-semibold text-blue-400 hover:text-blue-300 transition-colors"
-                      >
-                        <span>Open Interactive View</span>
-                        <ArrowRight className="w-3.5 h-3.5" />
-                      </button>
-                    </td>
-                  </tr>
-                ))}
+                {schedules.map((sched) => {
+                  const now = new Date();
+                  const isCurrent = sched.month === (now.getMonth() + 1) && sched.year === now.getFullYear();
+                  const isPast = (sched.year < now.getFullYear()) || (sched.year === now.getFullYear() && sched.month < (now.getMonth() + 1));
+
+                  return (
+                    <tr key={sched.id} className={`transition-colors ${isCurrent ? 'bg-blue-950/20 hover:bg-blue-900/30' : 'hover:bg-slate-800/30'}`}>
+                      <td className="px-6 py-4 font-bold text-slate-100">
+                        <div className="flex items-center space-x-2">
+                          <span>
+                            {new Date(sched.year, sched.month - 1).toLocaleString('default', { month: 'long' })} {sched.year}
+                          </span>
+                          {isCurrent && (
+                            <span className="px-2 py-0.5 text-[10px] uppercase font-bold tracking-wider rounded-full bg-blue-500/20 text-blue-400 border border-blue-500/30">
+                              Current Month
+                            </span>
+                          )}
+                          {isPast && (
+                            <span className="px-2 py-0.5 text-[10px] uppercase font-medium tracking-wider rounded-full bg-slate-800 text-slate-400">
+                              Past Month
+                            </span>
+                          )}
+                          {!isCurrent && !isPast && (
+                            <span className="px-2 py-0.5 text-[10px] uppercase font-medium tracking-wider rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+                              Upcoming
+                            </span>
+                          )}
+                        </div>
+                      </td>
+                      <td className="px-6 py-4">
+                        <StatusBadge status={sched.status} type="schedule" />
+                      </td>
+                      <td className="px-6 py-4 text-xs font-mono text-slate-400">
+                        {sched.generated_at ? new Date(sched.generated_at).toLocaleString() : 'N/A'}
+                      </td>
+                      <td className="px-6 py-4 text-xs font-mono text-slate-400">
+                        {sched.solver_score || 'Not executed'}
+                      </td>
+                      <td className="px-6 py-4 text-right">
+                        <button
+                          onClick={() => navigate(`/schedules/${sched.id}`)}
+                          className="inline-flex items-center space-x-1 text-xs font-semibold text-blue-400 hover:text-blue-300 transition-colors"
+                        >
+                          <span>Open Interactive View</span>
+                          <ArrowRight className="w-3.5 h-3.5" />
+                        </button>
+                      </td>
+                    </tr>
+                  );
+                })}
               </tbody>
             </table>
           </div>

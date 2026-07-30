@@ -49,6 +49,14 @@ export const userService = {
     return response.data;
   },
   deactivateUser: async (id: string) => {
+    const response = await apiClient.post(`/users/${id}/deactivate`);
+    return response.data;
+  },
+  activateUser: async (id: string) => {
+    const response = await apiClient.post(`/users/${id}/activate`);
+    return response.data;
+  },
+  deleteUser: async (id: string) => {
     const response = await apiClient.delete(`/users/${id}`);
     return response.data;
   },
@@ -81,6 +89,10 @@ export const workerService = {
   },
   createWorkerRule: async (workerId: string, rule: ConstraintCreate): Promise<WorkerConstraint> => {
     const response = await apiClient.post(`/workers/${workerId}/rules`, rule);
+    return response.data;
+  },
+  deleteWorkerRule: async (workerId: string, ruleId: string) => {
+    const response = await apiClient.delete(`/workers/${workerId}/rules/${ruleId}`);
     return response.data;
   },
 };

@@ -28,7 +28,7 @@ export const Sidebar: React.FC = () => {
     { label: t('audit_log'), path: '/audit-log', icon: FileText, show: true },
     { label: t('import_export'), path: '/import-export', icon: FileSpreadsheet, show: canManageUsers },
     { label: t('system_status'), path: '/system-status', icon: Activity, show: isSuperAdmin },
-    { label: t('user_accounts'), path: '/users', icon: UserCog, show: isOrgAdmin },
+    { label: t('user_accounts'), path: '/users', icon: UserCog, show: canManageUsers },
     { label: t('organizations'), path: '/organizations', icon: Building2, show: isSuperAdmin },
     { label: t('organization_settings'), path: '/organization-settings', icon: Sliders, show: isOrgAdmin },
   ];
