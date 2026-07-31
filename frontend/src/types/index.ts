@@ -325,3 +325,80 @@ export interface ComprehensiveDiagnostics {
   constraint_diagnostics: ConstraintDiagnostic[];
   suggested_fixes: SuggestedFix[];
 }
+
+export interface SandboxSchedule {
+  id: string;
+  parent_schedule_id?: string;
+  name: string;
+  description?: string;
+  status: 'DRAFT' | 'SIMULATED' | 'APPROVED' | 'REJECTED' | 'PROMOTED' | 'ARCHIVED' | string;
+  version: number;
+  author_id?: string;
+  author_name?: string;
+  year: number;
+  month: number;
+  scenario_type?: string;
+  scenario_params?: any;
+  created_at: string;
+  updated_at: string;
+  total_instances: number;
+  total_assignments: number;
+  coverage_percentage: number;
+}
+
+export interface AssignmentDiffItem {
+  change_type: 'ADDED' | 'REMOVED' | 'CHANGED_WORKER' | 'UNCHANGED';
+  date: string;
+  shift_type_id: string;
+  shift_name: string;
+  original_worker_id?: string;
+  original_worker_name?: string;
+  sandbox_worker_id?: string;
+  sandbox_worker_name?: string;
+  notes?: string;
+}
+
+export interface MetricDiffSummary {
+  original_coverage_pct: number;
+  sandbox_coverage_pct: number;
+  coverage_delta: number;
+  original_fairness_score: number;
+  sandbox_fairness_score: number;
+  fairness_delta: number;
+  original_overtime_hours: number;
+  sandbox_overtime_hours: number;
+  overtime_delta: number;
+  original_unfilled_shifts: number;
+  sandbox_unfilled_shifts: number;
+  unfilled_delta: number;
+}
+
+export interface ScheduleComparison {
+  original_schedule_id: string;
+  sandbox_id: string;
+  total_changes_count: number;
+  added_assignments_count: number;
+  removed_assignments_count: number;
+  modified_assignments_count: number;
+  metrics_summary: MetricDiffSummary;
+  assignment_diffs: AssignmentDiffItem[];
+  constraint_diffs: any[];
+}
+
+export interface SandboxSimulationRequest {
+  scenario_type: 'SICK_CALL' | 'VACATION_REQUEST' | 'STAFF_SHORTAGE' | 'EXTRA_STAFF' | 'RULE_MODIFICATION' | string;
+  employee_id?: string;
+  dates?: string[];
+  rule_type?: string;
+  rule_params?: any;
+  notes?: string;
+}
+
+export interface SandboxVersionItem {
+  id: string;
+  sandbox_id: string;
+  version_number: number;
+  change_description: string;
+  author_name?: string;
+  created_at: string;
+}

@@ -24,6 +24,7 @@ import { AnalyticsDashboardPage } from './pages/AnalyticsDashboardPage';
 import { OrganizationsManagementPage } from './pages/OrganizationsManagementPage';
 import { OrganizationSettingsPage } from './pages/OrganizationSettingsPage';
 import { OnboardingPage } from './pages/OnboardingPage';
+import { SandboxPage } from './pages/SandboxPage';
 
 const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { isAuthenticated, user } = useAuth();
@@ -115,6 +116,14 @@ export function App() {
                 element={
                   <ProtectedRoute>
                     <ScheduleDetailPage />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/sandbox"
+                element={
+                  <ProtectedRoute>
+                    <SandboxPage />
                   </ProtectedRoute>
                 }
               />

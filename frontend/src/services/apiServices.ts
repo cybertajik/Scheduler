@@ -3,7 +3,7 @@ import {
   User, Worker, WorkerCreate, ShiftType, ShiftTypeCreate,
   WorkerConstraint, ConstraintCreate, Schedule, ShiftInstance,
   Assignment, CoverageSummary, ConflictReport, AuditLog, Department,
-  ComprehensiveDiagnostics
+  ComprehensiveDiagnostics, SandboxSchedule, ScheduleComparison, SandboxSimulationRequest, SandboxVersionItem
 } from '../types';
 
 export const authService = {
@@ -363,6 +363,57 @@ export const holidayService = {
   },
   getCountryDateFormat: async (countryCode: string): Promise<{ country_code: string; date_format: string }> => {
     const response = await apiClient.get(`/holidays/date-format?country_code=${countryCode}`);
+    return response.data;
+  },
+};
+
+export const sandboxService = {
+  createSandbox: async (data: { parent_schedule_id?: string; name: string; description?: string; year?: number; month?: number; scenario_type?: string }) => {
+    const response = await apiClient.post('/sandboxes', data);
+    return response.data;
+  },
+  getSandboxes: async (): Promise<SandboxSchedule[]> => {
+    const response = await apiClient.get('/sandboxes');
+    return response.data;
+  },
+  getSandboxDetail: async (id: string): Promise<SandboxSchedule> => {
+    const response = await apiClient.get(`/sandboxes/${id}`);
+    return response.data;
+  },
+  updateSandbox: async (id: string, data: { name?: string; description?: string; status?: string }) => {
+    const response = await apiClient.patch(`/sandboxes/${id}`, data);
+    return response.data;
+  },
+  deleteSandbox: async (id: string) => {
+    const response = await apiClient.delete(`/sandboxes/${id}`);
+    return response.data;
+  },
+  cloneSandbox: async (id: string) => {
+    const response = await apiClient.post(`/sandboxes/${id}/clone`);
+    return response.data;
+  },
+  archiveSandbox: async (id: string) => {
+    const response = await apiClient.post(`/sandboxes/${id}/archive`);
+    return response.data;
+  },
+  restoreSandbox: async (id: string) => {
+    const response = await apiClient.post(`/sandboxes/${id}/restore`);
+    return response.data;
+  },
+  runSimulation: async (id: string, req: SandboxSimulationRequest) => {
+    const response = await apiClient.post(`/sandboxes/${id}/simulate`, req);
+    return response.data;
+  },
+  compareSchedules: async (sandboxId: string, targetId: string): Promise<ScheduleComparison> => {
+    const response = await apiClient.get(`/sandboxes/${sandboxId}/compare/${targetId}`);
+    return response.data;
+  },
+  promoteSandbox: async (id: string) => {
+    const response = await apiClient.post(`/sandboxes/${id}/promote`);
+    return response.data;
+  },
+  getVersionHistory: async (id: string): Promise<SandboxVersionItem[]> => {
+    const response = await apiClient.get(`/sandboxes/${id}/versions`);
     return response.data;
   },
 };

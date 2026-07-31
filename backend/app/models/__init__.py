@@ -8,6 +8,7 @@ from app.models.constraint import WorkerConstraint
 from app.models.schedule import Schedule, Assignment
 from app.models.audit_log import AuditLog
 from app.models.onboarding import OnboardingApplication
+from app.models.sandbox import SandboxSchedule, SandboxShiftInstance, SandboxAssignment, SandboxVersion
 
 __all__ = [
     "UserRole",
@@ -27,5 +28,9 @@ __all__ = [
     "Schedule",
     "Assignment",
     "AuditLog",
-    "OnboardingApplication"
+    "OnboardingApplication",
+    "SandboxSchedule",
+    "SandboxShiftInstance",
+    "SandboxAssignment",
+    "SandboxVersion"
 ]
