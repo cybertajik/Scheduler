@@ -1,6 +1,6 @@
 import React from 'react';
 import {
-  ArrowLeft, Cpu, ShieldAlert, CheckCircle2, RefreshCw, Undo2, Redo2, PanelRightOpen, Users, Calendar as CalendarIcon, FileSpreadsheet, ChevronLeft, ChevronRight, Activity
+  ArrowLeft, Cpu, ShieldAlert, CheckCircle2, RefreshCw, Undo2, Redo2, PanelRightOpen, Users, Calendar as CalendarIcon, FileSpreadsheet, ChevronLeft, ChevronRight, Activity, Wrench
 } from 'lucide-react';
 import { ScheduleStatus } from '../../types';
 import { StatusBadge } from '../Common/StatusBadge';
@@ -23,6 +23,7 @@ interface EditorToolbarProps {
   onToggleConflictPanel: () => void;
   onToggleWorkerDrawer: () => void;
   onToggleDiagnosticsPanel?: () => void;
+  onToggleAutoRepairModal?: () => void;
   isSolving: boolean;
   conflictCount: number;
 }
@@ -44,6 +45,7 @@ export const EditorToolbar: React.FC<EditorToolbarProps> = React.memo(({
   onToggleConflictPanel,
   onToggleWorkerDrawer,
   onToggleDiagnosticsPanel,
+  onToggleAutoRepairModal,
   isSolving,
   conflictCount,
 }) => {
@@ -178,6 +180,18 @@ export const EditorToolbar: React.FC<EditorToolbarProps> = React.memo(({
           >
             <Activity className="w-4 h-4 text-indigo-400" />
             Diagnostics
+          </button>
+        )}
+
+        {/* Intelligent Auto-Repair */}
+        {onToggleAutoRepairModal && (
+          <button
+            onClick={onToggleAutoRepairModal}
+            className="inline-flex items-center gap-2 px-3 py-2 bg-teal-950/60 hover:bg-teal-900/80 border border-teal-800/80 text-teal-300 text-sm font-medium rounded-lg transition-colors shadow-sm"
+            title="Intelligent Auto-Repair & Conflict Resolution"
+          >
+            <Wrench className="w-4 h-4 text-teal-400" />
+            Auto-Repair
           </button>
         )}
 

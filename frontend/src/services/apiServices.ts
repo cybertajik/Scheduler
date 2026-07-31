@@ -4,7 +4,8 @@ import {
   WorkerConstraint, ConstraintCreate, Schedule, ShiftInstance,
   Assignment, CoverageSummary, ConflictReport, AuditLog, Department,
   ComprehensiveDiagnostics, SandboxSchedule, ScheduleComparison, SandboxSimulationRequest, SandboxVersionItem,
-  OperationalOverview, SystemHealth, EmployeeAnalyticsItem, DepartmentAnalyticsItem, HistoricalTrends, OperationalAlertItem
+  OperationalOverview, SystemHealth, EmployeeAnalyticsItem, DepartmentAnalyticsItem, HistoricalTrends, OperationalAlertItem,
+  ConflictDiagnosticItem, RepairPlanOut, RepairHistoryItem
 } from '../types';
 
 export const authService = {
@@ -451,6 +452,33 @@ export const sandboxService = {
   },
   getVersionHistory: async (id: string): Promise<SandboxVersionItem[]> => {
     const response = await apiClient.get(`/sandboxes/${id}/versions`);
+    return response.data;
+  },
+};
+
+export const repairService = {
+  analyzeConflicts: async (scheduleId: string): Promise<ConflictDiagnosticItem[]> => {
+    const response = await apiClient.post(`/schedules/${scheduleId}/repair/analyze`);
+    return response.data;
+  },
+  generateRepairPlans: async (scheduleId: string): Promise<RepairPlanOut[]> => {
+    const response = await apiClient.post(`/schedules/${scheduleId}/repair/plans`);
+    return response.data;
+  },
+  applyRepairPlan: async (scheduleId: string, planId: string) => {
+    const response = await apiClient.post(`/schedules/${scheduleId}/repair/apply`, { plan_id: planId });
+    return response.data;
+  },
+  undoRepair: async (scheduleId: string) => {
+    const response = await apiClient.post(`/schedules/${scheduleId}/repair/undo`);
+    return response.data;
+  },
+  redoRepair: async (scheduleId: string) => {
+    const response = await apiClient.post(`/schedules/${scheduleId}/repair/redo`);
+    return response.data;
+  },
+  getRepairHistory: async (scheduleId: string): Promise<RepairHistoryItem[]> => {
+    const response = await apiClient.get(`/schedules/${scheduleId}/repair/history`);
     return response.data;
   },
 };

@@ -505,3 +505,64 @@ export interface OperationalAlertItem {
   timestamp: string;
   suggested_action?: string;
 }
+
+export interface ConflictDiagnosticItem {
+  id: string;
+  category: string;
+  severity: 'HARD' | 'SOFT' | string;
+  worker_id?: string;
+  worker_name?: string;
+  date: string;
+  shift_type_id?: string;
+  shift_name?: string;
+  details: string;
+}
+
+export interface RepairActionItem {
+  action_type: 'SWAP' | 'REASSIGN' | 'REPLACE' | 'OVERTIME' | 'RULE_RELAX' | 'LOCAL_SOLVER' | string;
+  date: string;
+  shift_instance_id: string;
+  shift_name: string;
+  original_worker_id?: string;
+  original_worker_name?: string;
+  target_worker_id?: string;
+  target_worker_name?: string;
+  notes: string;
+}
+
+export interface ExplainabilityReport {
+  conflict_detected: string;
+  root_cause: string;
+  repair_performed: string;
+  employees_affected: string[];
+  reason_chosen: string;
+  alternatives_considered: string[];
+  expected_impact: string;
+}
+
+export interface RepairPlanOut {
+  id: string;
+  plan_name: string;
+  rank: number;
+  tier: string;
+  disruption_score: number;
+  conflicts_resolved_count: number;
+  assignments_changed_count: number;
+  fairness_score: number;
+  overtime_delta_hours: number;
+  coverage_improvement_pct: number;
+  actions: RepairActionItem[];
+  explainability: ExplainabilityReport;
+}
+
+export interface RepairHistoryItem {
+  id: string;
+  schedule_id: string;
+  plan_name: string;
+  author_name?: string;
+  disruption_score: number;
+  conflicts_resolved_count: number;
+  assignments_changed_count: number;
+  status: string;
+  applied_at?: string;
+}

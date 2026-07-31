@@ -9,6 +9,7 @@ from app.models.schedule import Schedule, Assignment
 from app.models.audit_log import AuditLog
 from app.models.onboarding import OnboardingApplication
 from app.models.sandbox import SandboxSchedule, SandboxShiftInstance, SandboxAssignment, SandboxVersion
+from app.models.repair import ScheduleRepair
 
 __all__ = [
     "UserRole",
@@ -32,5 +33,6 @@ __all__ = [
     "SandboxSchedule",
     "SandboxShiftInstance",
     "SandboxAssignment",
-    "SandboxVersion"
+    "SandboxVersion",
+    "ScheduleRepair"
 ]

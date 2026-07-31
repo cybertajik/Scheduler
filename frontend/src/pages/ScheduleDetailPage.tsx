@@ -17,6 +17,7 @@ import { ExcelRosterView } from '../components/ScheduleEditor/ExcelRosterView';
 import { WorkerDetailDrawer } from '../components/ScheduleEditor/WorkerDetailDrawer';
 import { ShiftContextMenu } from '../components/ScheduleEditor/ShiftContextMenu';
 import { DiagnosticsPanel } from '../components/ScheduleEditor/DiagnosticsPanel';
+import { AutoRepairModal } from '../components/ScheduleEditor/AutoRepairModal';
 
 import { useLanguage } from '../context/LanguageContext';
 import { useHolidays } from '../context/HolidayContext';
@@ -53,6 +54,7 @@ export const ScheduleDetailPage: React.FC = () => {
   const [isConflictPanelOpen, setIsConflictPanelOpen] = useState(false);
   const [isWorkerDrawerOpen, setIsWorkerDrawerOpen] = useState(false);
   const [isDiagnosticsPanelOpen, setIsDiagnosticsPanelOpen] = useState(false);
+  const [isAutoRepairModalOpen, setIsAutoRepairModalOpen] = useState(false);
   const [selectedWorker, setSelectedWorker] = useState<Worker | null>(null);
 
   // Assignment Modal
@@ -383,6 +385,7 @@ export const ScheduleDetailPage: React.FC = () => {
         onToggleConflictPanel={() => setIsConflictPanelOpen((prev) => !prev)}
         onToggleWorkerDrawer={() => setIsWorkerDrawerOpen((prev) => !prev)}
         onToggleDiagnosticsPanel={() => setIsDiagnosticsPanelOpen((prev) => !prev)}
+        onToggleAutoRepairModal={() => setIsAutoRepairModalOpen(true)}
         isSolving={solving}
         conflictCount={conflicts?.hard_conflicts_count || 0}
       />
@@ -393,6 +396,19 @@ export const ScheduleDetailPage: React.FC = () => {
       {/* Solver Diagnostics Panel */}
       {isDiagnosticsPanelOpen && id && (
         <DiagnosticsPanel scheduleId={id} onClose={() => setIsDiagnosticsPanelOpen(false)} />
+      )}
+
+      {/* Intelligent Auto-Repair Modal */}
+      {id && (
+        <AutoRepairModal
+          scheduleId={id}
+          isOpen={isAutoRepairModalOpen}
+          onClose={() => setIsAutoRepairModalOpen(false)}
+          onRepairApplied={() => {
+            setToast({ type: 'success', message: 'Auto-Repair plan applied successfully.' });
+            loadData();
+          }}
+        />
       )}
 
       {/* Coverage & Diagnostics Card */}
