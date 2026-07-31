@@ -10,6 +10,8 @@ interface AuthContextType {
   isAuthenticated: boolean;
   role: UserRole | null;
   isAdmin: boolean;
+  isSuperAdmin: boolean;
+  isOrgAdmin: boolean;
   isScheduler: boolean;
   isManager: boolean;
   canManageSchedules: boolean;
@@ -66,13 +68,15 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   const role = user?.role || null;
-  const isAdmin = role === 'SUPER_ADMIN' || role === 'ORG_ADMIN' || role === 'ADMIN';
+  const isSuperAdmin = role === 'SUPER_ADMIN';
+  const isOrgAdmin = role === 'ORG_ADMIN' || role === 'ADMIN';
+  const isAdmin = isSuperAdmin || isOrgAdmin;
   const isScheduler = role === 'SCHEDULER';
   const isManager = role === 'MANAGER';
 
-  const canManageSchedules = isAdmin || isScheduler;
-  const canManageWorkers = isAdmin || isScheduler;
-  const canManageUsers = isAdmin || isManager;
+  const canManageSchedules = (isOrgAdmin || isScheduler) && !isSuperAdmin;
+  const canManageWorkers = (isOrgAdmin || isScheduler) && !isSuperAdmin;
+  const canManageUsers = isOrgAdmin && !isSuperAdmin;
 
   return (
     <AuthContext.Provider
@@ -84,6 +88,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         isAuthenticated: !!token,
         role,
         isAdmin,
+        isSuperAdmin,
+        isOrgAdmin,
         isScheduler,
         isManager,
         canManageSchedules,

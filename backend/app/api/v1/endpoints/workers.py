@@ -7,7 +7,7 @@ from app.schemas.worker import WorkerCreate, WorkerUpdate, WorkerResponse
 from app.schemas.rule import ConstraintCreate, ConstraintResponse
 from app.services.worker_service import WorkerService
 from app.api.v1.deps import get_current_user, require_admin
-from app.models import User, Worker, WorkerConstraint
+from app.models import User, Worker, WorkerConstraint, UserRole
 
 router = APIRouter()
 
@@ -17,9 +17,12 @@ def list_workers(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ):
+    query = db.query(Worker)
+    if current_user.role != UserRole.SUPER_ADMIN and current_user.organization_id:
+        query = query.filter(Worker.organization_id == current_user.organization_id)
     if active_only:
-        return WorkerService.get_all_workers(db)
-    return db.query(Worker).all()
+        query = query.filter(Worker.active == True)
+    return query.order_by(Worker.first_name, Worker.last_name).all()
 
 @router.post("", response_model=WorkerResponse, status_code=201)
 def create_worker(
@@ -27,6 +30,8 @@ def create_worker(
     db: Session = Depends(get_db),
     current_admin: User = Depends(require_admin)
 ):
+    if not worker_in.organization_id and current_admin.organization_id:
+        worker_in.organization_id = current_admin.organization_id
     return WorkerService.create_worker(db, worker_in)
 
 @router.get("/{worker_id}", response_model=WorkerResponse)

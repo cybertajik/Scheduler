@@ -41,7 +41,7 @@ export const WorkersPage: React.FC = () => {
       setWorkers(wData);
       setOrgSettings(orgData);
     } catch (err: any) {
-      setError(err.response?.data?.detail || 'Failed to fetch workers');
+      setError(err.response?.data?.detail || 'Failed to fetch employees');
     } finally {
       setLoading(false);
     }
@@ -73,7 +73,7 @@ export const WorkersPage: React.FC = () => {
       });
       loadWorkers();
     } catch (err: any) {
-      setError(err.response?.data?.detail || 'Failed to create worker');
+      setError(err.response?.data?.detail || 'Failed to create employee');
     }
   };
 
@@ -86,7 +86,7 @@ export const WorkersPage: React.FC = () => {
       }
       loadWorkers();
     } catch (err: any) {
-      setError(err.response?.data?.detail || 'Failed to update worker state');
+      setError(err.response?.data?.detail || 'Failed to update employee status');
     }
   };
 
@@ -104,14 +104,14 @@ export const WorkersPage: React.FC = () => {
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-6 border-b border-slate-800">
         <div>
           <h1 className="text-2xl font-bold text-slate-100">{t('workers')}</h1>
-          <p className="text-sm text-slate-400 mt-1">Manage staff roster, contract type, and contact details</p>
+          <p className="text-sm text-slate-400 mt-1">Manage employee roster, contract type, and contact details</p>
         </div>
         <button
           onClick={() => setIsModalOpen(true)}
           className="flex items-center space-x-2 px-4 py-2.5 bg-blue-600 hover:bg-blue-500 text-white rounded-xl text-sm font-semibold shadow-lg shadow-blue-600/20 transition-all self-start sm:self-auto"
         >
           <Plus className="w-4 h-4" />
-          <span>Add Worker</span>
+          <span>Add Employee</span>
         </button>
       </div>
 
@@ -130,7 +130,7 @@ export const WorkersPage: React.FC = () => {
       </div>
 
       {loading ? (
-        <LoadingSpinner label="Fetching worker directory..." />
+        <LoadingSpinner label="Fetching employee directory..." />
       ) : (
         <div className="bg-slate-900 border border-slate-800 rounded-2xl overflow-hidden shadow-xl">
           <div className="overflow-x-auto">
@@ -186,7 +186,7 @@ export const WorkersPage: React.FC = () => {
                             ? 'text-slate-400 hover:text-rose-400 hover:bg-rose-500/10'
                             : 'text-slate-400 hover:text-emerald-400 hover:bg-emerald-500/10'
                         }`}
-                        title={worker.active ? 'Deactivate Worker' : 'Reactivate Worker'}
+                        title={worker.active ? 'Deactivate Employee' : 'Reactivate Employee'}
                       >
                         {worker.active ? <UserX className="w-4 h-4" /> : <UserCheck className="w-4 h-4" />}
                       </button>
@@ -200,7 +200,7 @@ export const WorkersPage: React.FC = () => {
       )}
 
       {/* Create Worker Modal */}
-      <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} title="Register New Worker">
+      <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} title="Register New Employee">
         <form onSubmit={handleCreateWorker} className="space-y-4">
           <div>
             <label className="block text-xs font-semibold text-slate-300 mb-1">
@@ -319,7 +319,7 @@ export const WorkersPage: React.FC = () => {
               type="submit"
               className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-semibold hover:bg-blue-500 shadow-lg shadow-blue-600/20"
             >
-              Save Worker
+              Save Employee
             </button>
           </div>
         </form>

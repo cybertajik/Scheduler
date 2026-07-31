@@ -144,7 +144,7 @@ class AuthService:
     @staticmethod
     def get_all_users(db: Session, current_user: Optional[User] = None) -> List[User]:
         query = db.query(User)
-        if current_user and current_user.role not in [UserRole.SUPER_ADMIN, UserRole.ADMIN] and current_user.organization_id:
+        if current_user and current_user.role != UserRole.SUPER_ADMIN and current_user.organization_id:
             query = query.filter(User.organization_id == current_user.organization_id)
         return query.order_by(User.username).all()
 

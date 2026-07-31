@@ -14,10 +14,10 @@ class TestSolverIntegration(unittest.TestCase):
 
     def setUp(self):
         self.worker_1 = WorkerDTO(
-            id="w1", employee_number="EMP01", first_name="Alice", last_name="Smith", department_id="d1"
+            id="w1", employee_number="EMP01", first_name="Alice", last_name="Smith", department_id="d1", skills={"SKILL_LOGISTICS"}
         )
         self.worker_2 = WorkerDTO(
-            id="w2", employee_number="EMP02", first_name="Bob", last_name="Jones", department_id="d1"
+            id="w2", employee_number="EMP02", first_name="Bob", last_name="Jones", department_id="d1", skills={"SKILL_WAREHOUSE"}
         )
         self.worker_3 = WorkerDTO(
             id="w3", employee_number="EMP03", first_name="Charlie", last_name="Brown", department_id="d1"
@@ -69,7 +69,7 @@ class TestSolverIntegration(unittest.TestCase):
             config=SolverConfigDTO(time_limit_seconds=10)
         )
 
-        # Since post-night rest prevents w1 from working on Aug 2, schedule must leave Aug 2 unfilled
+        # Post-night rest prevents w1 from working on Aug 2, schedule must leave Aug 2 unfilled
         result = self.solver_service.solve(input_data)
         self.assertTrue(result.is_solved)
         self.assertTrue(result.is_partial)
@@ -97,6 +97,89 @@ class TestSolverIntegration(unittest.TestCase):
         self.assertEqual(len(result.assignments), 1)
         self.assertEqual(result.assignments[0].worker_id, "w2")
         self.assertTrue(result.assignments[0].is_locked)
+
+    def test_vacation_rule_enforcement(self):
+        # Worker 1 is on vacation Aug 1 - Aug 3
+        vacation = ConstraintDTO(
+            id="c1",
+            worker_id="w1",
+            rule_type=RuleType.VACATION,
+            category=RuleCategory.HARD,
+            start_date=date(2026, 8, 1),
+            end_date=date(2026, 8, 3)
+        )
+        reqs = [
+            ShiftInstanceRequirementDTO(id="r1", date=date(2026, 8, 2), shift_type_id="s_morn", required_workers=1)
+        ]
+
+        input_data = SolverInputDTO(
+            start_date=date(2026, 8, 1),
+            end_date=date(2026, 8, 3),
+            workers={"w1": self.worker_1, "w2": self.worker_2},
+            shift_types={"s_morn": self.shift_morning},
+            shift_requirements=reqs,
+            worker_constraints=[vacation]
+        )
+
+        result = self.solver_service.solve(input_data)
+        self.assertTrue(result.is_solved)
+        self.assertEqual(len(result.assignments), 1)
+        # Worker 2 must be assigned since Worker 1 is on vacation
+        self.assertEqual(result.assignments[0].worker_id, "w2")
+
+    def test_no_weekend_rule_enforcement(self):
+        # 2026-08-01 is Saturday, 2026-08-02 is Sunday
+        no_weekend = ConstraintDTO(
+            id="c2",
+            worker_id="w1",
+            rule_type=RuleType.NO_WEEKENDS,
+            category=RuleCategory.HARD,
+            start_date=date(2026, 8, 1),
+            end_date=date(2026, 8, 31)
+        )
+        reqs = [
+            ShiftInstanceRequirementDTO(id="r1", date=date(2026, 8, 1), shift_type_id="s_morn", required_workers=1)
+        ]
+
+        input_data = SolverInputDTO(
+            start_date=date(2026, 8, 1),
+            end_date=date(2026, 8, 1),
+            workers={"w1": self.worker_1, "w2": self.worker_2},
+            shift_types={"s_morn": self.shift_morning},
+            shift_requirements=reqs,
+            worker_constraints=[no_weekend]
+        )
+
+        result = self.solver_service.solve(input_data)
+        self.assertTrue(result.is_solved)
+        self.assertEqual(len(result.assignments), 1)
+        # Worker 2 assigned because Worker 1 cannot work weekends
+        self.assertEqual(result.assignments[0].worker_id, "w2")
+
+    def test_fairness_distribution(self):
+        # 4 shift requirements across 4 days for 2 workers
+        reqs = [
+            ShiftInstanceRequirementDTO(id=f"r{i}", date=date(2026, 8, i), shift_type_id="s_morn", required_workers=1)
+            for i in range(1, 5)
+        ]
+
+        input_data = SolverInputDTO(
+            start_date=date(2026, 8, 1),
+            end_date=date(2026, 8, 4),
+            workers={"w1": self.worker_1, "w2": self.worker_2},
+            shift_types={"s_morn": self.shift_morning},
+            shift_requirements=reqs
+        )
+
+        result = self.solver_service.solve(input_data)
+        self.assertTrue(result.is_solved)
+        self.assertEqual(len(result.assignments), 4)
+
+        # Verify fairness: each worker gets 2 shifts
+        w1_count = sum(1 for a in result.assignments if a.worker_id == "w1")
+        w2_count = sum(1 for a in result.assignments if a.worker_id == "w2")
+        self.assertEqual(w1_count, 2)
+        self.assertEqual(w2_count, 2)
 
     def test_infeasibility_diagnostics(self):
         # 5 required shifts on 1 day with only 2 workers

@@ -3,6 +3,7 @@ import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { ThemeProvider } from './context/ThemeContext';
 import { LanguageProvider } from './context/LanguageContext';
+import { HolidayProvider } from './context/HolidayContext';
 import { LanguageSelectModal } from './components/Common/LanguageSelectModal';
 import { Layout } from './components/Layout/Layout';
 import { LoginPage } from './pages/LoginPage';
@@ -22,8 +23,20 @@ import { ImportExportPage } from './pages/ImportExportPage';
 import { AnalyticsDashboardPage } from './pages/AnalyticsDashboardPage';
 import { OrganizationsManagementPage } from './pages/OrganizationsManagementPage';
 import { OrganizationSettingsPage } from './pages/OrganizationSettingsPage';
+import { OnboardingPage } from './pages/OnboardingPage';
 
 const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  const { isAuthenticated, user } = useAuth();
+  if (!isAuthenticated) {
+    return <Navigate to="/login" replace />;
+  }
+  if (user?.role === 'SUPER_ADMIN') {
+    return <Navigate to="/organizations" replace />;
+  }
+  return <Layout>{children}</Layout>;
+};
+
+const CommonProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { isAuthenticated } = useAuth();
   if (!isAuthenticated) {
     return <Navigate to="/login" replace />;
@@ -32,20 +45,37 @@ const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) =
 };
 
 const AdminRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const { isAuthenticated, isAdmin } = useAuth();
+  const { isAuthenticated, isAdmin, user } = useAuth();
   if (!isAuthenticated) {
     return <Navigate to="/login" replace />;
   }
   if (!isAdmin) {
     return <Navigate to="/" replace />;
   }
+  if (user?.role === 'SUPER_ADMIN') {
+    return <Navigate to="/organizations" replace />;
+  }
+  return <Layout>{children}</Layout>;
+};
+
+const SuperAdminRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  const { isAuthenticated, user } = useAuth();
+  if (!isAuthenticated) {
+    return <Navigate to="/login" replace />;
+  }
+  if (user?.role !== 'SUPER_ADMIN') {
+    return <Navigate to="/" replace />;
+  }
   return <Layout>{children}</Layout>;
 };
 
 const UserManagementRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const { isAuthenticated, canManageUsers } = useAuth();
+  const { isAuthenticated, canManageUsers, user } = useAuth();
   if (!isAuthenticated) {
     return <Navigate to="/login" replace />;
+  }
+  if (user?.role === 'SUPER_ADMIN') {
+    return <Navigate to="/organizations" replace />;
   }
   if (!canManageUsers) {
     return <Navigate to="/" replace />;
@@ -58,10 +88,12 @@ export function App() {
     <ThemeProvider>
       <LanguageProvider>
         <AuthProvider>
+          <HolidayProvider>
           <BrowserRouter>
             <LanguageSelectModal />
             <Routes>
               <Route path="/login" element={<LoginPage />} />
+              <Route path="/onboarding" element={<OnboardingPage />} />
               <Route
                 path="/"
                 element={
@@ -129,17 +161,17 @@ export function App() {
               <Route
                 path="/audit-log"
                 element={
-                  <ProtectedRoute>
+                  <CommonProtectedRoute>
                     <AuditLogPage />
-                  </ProtectedRoute>
+                  </CommonProtectedRoute>
                 }
               />
               <Route
                 path="/profile"
                 element={
-                  <ProtectedRoute>
+                  <CommonProtectedRoute>
                     <ProfilePage />
-                  </ProtectedRoute>
+                  </CommonProtectedRoute>
                 }
               />
               <Route
@@ -153,9 +185,9 @@ export function App() {
               <Route
                 path="/system-status"
                 element={
-                  <AdminRoute>
+                  <SuperAdminRoute>
                     <SystemStatusPage />
-                  </AdminRoute>
+                  </SuperAdminRoute>
                 }
               />
               <Route
@@ -169,17 +201,17 @@ export function App() {
               <Route
                 path="/analytics"
                 element={
-                  <ProtectedRoute>
+                  <CommonProtectedRoute>
                     <AnalyticsDashboardPage />
-                  </ProtectedRoute>
+                  </CommonProtectedRoute>
                 }
               />
               <Route
                 path="/organizations"
                 element={
-                  <AdminRoute>
+                  <SuperAdminRoute>
                     <OrganizationsManagementPage />
-                  </AdminRoute>
+                  </SuperAdminRoute>
                 }
               />
               <Route
@@ -193,6 +225,7 @@ export function App() {
               <Route path="*" element={<Navigate to="/" replace />} />
             </Routes>
           </BrowserRouter>
+          </HolidayProvider>
         </AuthProvider>
       </LanguageProvider>
     </ThemeProvider>

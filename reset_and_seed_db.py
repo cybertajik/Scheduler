@@ -3,16 +3,16 @@ Database Reset & Seed Script
 =============================
 Connects to the remote server via SSH and:
 1. Drops all tables and recreates the schema
-2. Seeds with: 1 Admin, 1 Manager, 15 Employees
-3. Creates departments, shift types, skills
-4. Creates schedules for past 1 month + next 6 months only
+2. Seeds:
+   - Product Owner (admin@admin.com / !23QWEasd) -> SUPER_ADMIN
+   - Test Organisation 1 (testorg1@org.com / !23QWEasd) -> ORG_ADMIN, Scheduler, 15 Employees
+   - Test Organisation 2 (testorg2@org.com / !23QWEasd) -> ORG_ADMIN, Scheduler, 25 Employees
+3. Creates departments, skills, shift types, and schedules
 """
 import sys
 import paramiko
 import re
 import time
-import json
-import textwrap
 
 if sys.stdout.encoding != 'utf-8':
     sys.stdout.reconfigure(encoding='utf-8', errors='replace')
@@ -47,7 +47,6 @@ def ssh_exec(client, cmd, timeout=120):
     chan.close()
     return strip_ansi(output.decode('utf-8', errors='replace'))
 
-# The seed Python script to run inside the backend container
 SEED_SCRIPT = r'''
 import uuid
 import bcrypt
@@ -69,150 +68,134 @@ from app.models.organization import Organization
 def hash_pw(pw):
     return bcrypt.hashpw(pw.encode("utf-8")[:72], bcrypt.gensalt()).decode("utf-8")
 
-print("=== DROPPING ALL TABLES ===")
-Base.metadata.drop_all(bind=engine)
+print("=== DROPPING SCHEMA & ALL TABLES ===")
+with engine.connect().execution_options(isolation_level="AUTOCOMMIT") as conn:
+    conn.execute(text("DROP SCHEMA IF EXISTS public CASCADE; CREATE SCHEMA public;"))
 print("=== RECREATING ALL TABLES ===")
 Base.metadata.create_all(bind=engine)
 
 db = SessionLocal()
 try:
-    # ── 1. Admin User ──
-    print("Creating Admin user...")
-    admin = User(
+    # ── 1. Product Owner (Super Admin) ──
+    print("Creating Product Owner (admin@admin.com)...")
+    po_user = User(
         id=uuid.uuid4(),
         username="admin",
         email="admin@admin.com",
         password_hash=hash_pw("!23QWEasd"),
-        first_name="System",
-        last_name="Administrator",
-        role=UserRole.ADMIN,
+        first_name="Product",
+        last_name="Owner",
+        role=UserRole.SUPER_ADMIN,
         active=True,
         preferred_language="en",
         theme_preference="dark",
     )
-    db.add(admin)
+    db.add(po_user)
     db.flush()
 
-    # ── 2. Departments ──
-    print("Creating departments...")
-    dept_names = ["Operations", "Kitchen", "Front Desk"]
-    depts = {}
-    for name in dept_names:
-        d = Department(id=uuid.uuid4(), name=name, description=f"{name} department")
+    # ── 2. Test Organisation 1 ──
+    print("Creating Test Organisation 1...")
+    org1 = Organization(
+        id=uuid.uuid4(),
+        name="Test Organisation 1",
+        slug="test-org-1",
+        domain="org1.scheduler.local",
+        description="Primary Logistics & Operations Organization",
+        contact_email="testorg1@org.com",
+        contact_tel="+1-555-0101",
+        address="100 Innovation Way, Tech City",
+        billing_cycle="MONTHLY",
+        subscription_status="ACTIVE",
+        require_employee_id=True,
+        country_code="US",
+        active=True,
+    )
+    db.add(org1)
+    db.flush()
+
+    # Org 1 Departments
+    org1_depts = {}
+    for name in ["Logistics", "Warehouse", "Support"]:
+        d = Department(id=uuid.uuid4(), organization_id=org1.id, name=name, description=f"{name} dept")
         db.add(d)
-        depts[name] = d
+        org1_depts[name] = d
     db.flush()
 
-    # ── 3. Skills ──
-    print("Creating skills...")
-    skill_names = ["First Aid", "Food Safety", "Cash Register", "Inventory", "Customer Service"]
-    skills = {}
-    for name in skill_names:
-        s = Skill(id=uuid.uuid4(), name=name, description=f"{name} certification")
-        db.add(s)
-        skills[name] = s
-    db.flush()
-
-    # ── 4. Shift Types ──
-    print("Creating shift types...")
-    shift_types_data = [
-        ("Morning",  "#22C55E", time( 6, 0), time(14, 0), 8.0, False, False),
-        ("Day",      "#3B82F6", time( 9, 0), time(17, 0), 8.0, False, False),
-        ("Evening",  "#F59E0B", time(14, 0), time(22, 0), 8.0, False, False),
-        ("Night",    "#EF4444", time(22, 0), time( 6, 0), 8.0, True,  True),
-    ]
-    shift_types = {}
-    for name, color, st, et, dur, night, rest in shift_types_data:
-        s = ShiftType(
-            id=uuid.uuid4(), name=name, color=color,
-            start_time=st, end_time=et, duration=dur,
-            is_night_shift=night, requires_rest_day=rest,
-        )
-        db.add(s)
-        shift_types[name] = s
-    db.flush()
-
-    # ── 5. Manager User + Worker ──
-    print("Creating Manager...")
-    mgr_user = User(
+    # Org 1 Manager
+    mgr1 = User(
         id=uuid.uuid4(),
-        username="manager1",
-        email="manager@scheduler.local",
+        organization_id=org1.id,
+        username="testorg1",
+        email="testorg1@org.com",
         password_hash=hash_pw("!23QWEasd"),
-        first_name="Sarah",
-        last_name="Johnson",
-        role=UserRole.MANAGER,
+        first_name="Alex",
+        last_name="Vance",
+        role=UserRole.ORG_ADMIN,
         active=True,
-        preferred_language="en",
-        theme_preference="dark",
     )
-    db.add(mgr_user)
-    db.flush()
-    mgr_worker = Worker(
+    db.add(mgr1)
+    # Org 1 Scheduler
+    sched1 = User(
         id=uuid.uuid4(),
-        employee_number="MGR-001",
-        department_id=depts["Operations"].id,
-        user_id=mgr_user.id,
-        first_name="Sarah",
-        last_name="Johnson",
-        phone="+1-555-0100",
-        email="manager@scheduler.local",
-        hire_date=date(2023, 1, 15),
-        weekly_contract_hours=40.0,
-        contract_type=ContractType.SALARY,
-        monthly_salary=5500.0,
+        organization_id=org1.id,
+        username="scheduler1",
+        email="scheduler1@testorg1.com",
+        password_hash=hash_pw("!23QWEasd"),
+        first_name="Sam",
+        last_name="Planner",
+        role=UserRole.SCHEDULER,
         active=True,
     )
-    db.add(mgr_worker)
+    db.add(sched1)
     db.flush()
 
-    # ── 6. 15 Employees ──
-    print("Creating 15 employees...")
-    employees_data = [
-        ("emp01", "James",    "Miller",    "Operations",  "+1-555-0101", "james.miller@scheduler.local",    date(2023, 3, 1),  38.0, "HOURLY", 18.50),
-        ("emp02", "Emily",    "Davis",     "Operations",  "+1-555-0102", "emily.davis@scheduler.local",     date(2023, 4, 15), 40.0, "HOURLY", 19.00),
-        ("emp03", "Michael",  "Wilson",    "Operations",  "+1-555-0103", "michael.wilson@scheduler.local",  date(2023, 5, 1),  36.0, "HOURLY", 17.50),
-        ("emp04", "Jessica",  "Brown",     "Kitchen",     "+1-555-0104", "jessica.brown@scheduler.local",   date(2023, 6, 1),  40.0, "SALARY", 3200.0),
-        ("emp05", "Daniel",   "Taylor",    "Kitchen",     "+1-555-0105", "daniel.taylor@scheduler.local",   date(2023, 7, 15), 40.0, "HOURLY", 20.00),
-        ("emp06", "Ashley",   "Anderson",  "Kitchen",     "+1-555-0106", "ashley.anderson@scheduler.local", date(2023, 8, 1),  32.0, "HOURLY", 17.00),
-        ("emp07", "David",    "Thomas",    "Kitchen",     "+1-555-0107", "david.thomas@scheduler.local",    date(2024, 1, 10), 40.0, "HOURLY", 18.00),
-        ("emp08", "Sarah",    "Jackson",   "Kitchen",     "+1-555-0108", "sarah.jackson@scheduler.local",   date(2024, 2, 1),  38.0, "SALARY", 3000.0),
-        ("emp09", "Robert",   "White",     "Front Desk",  "+1-555-0109", "robert.white@scheduler.local",    date(2024, 3, 15), 40.0, "HOURLY", 19.50),
-        ("emp10", "Jennifer", "Harris",    "Front Desk",  "+1-555-0110", "jennifer.harris@scheduler.local", date(2024, 4, 1),  36.0, "HOURLY", 18.00),
-        ("emp11", "William",  "Martin",    "Front Desk",  "+1-555-0111", "william.martin@scheduler.local",  date(2024, 5, 1),  40.0, "SALARY", 3400.0),
-        ("emp12", "Amanda",   "Garcia",    "Front Desk",  "+1-555-0112", "amanda.garcia@scheduler.local",   date(2024, 6, 15), 32.0, "HOURLY", 17.50),
-        ("emp13", "Thomas",   "Martinez",  "Operations",  "+1-555-0113", "thomas.martinez@scheduler.local", date(2024, 8, 1),  40.0, "HOURLY", 19.00),
-        ("emp14", "Lisa",     "Robinson",  "Operations",  "+1-555-0114", "lisa.robinson@scheduler.local",   date(2024, 9, 15), 38.0, "HOURLY", 18.50),
-        ("emp15", "Christopher","Clark",   "Kitchen",     "+1-555-0115", "chris.clark@scheduler.local",     date(2024, 10, 1), 40.0, "SALARY", 3100.0),
+    # Org 1 - 15 Employees
+    print("Creating 15 Employees for Test Organisation 1...")
+    org1_emp_names = [
+        ("James", "Miller", "Logistics", "+1-555-0101", 38.0, "HOURLY", 18.50),
+        ("Emily", "Davis", "Logistics", "+1-555-0102", 40.0, "HOURLY", 19.00),
+        ("Michael", "Wilson", "Logistics", "+1-555-0103", 36.0, "HOURLY", 17.50),
+        ("Jessica", "Brown", "Warehouse", "+1-555-0104", 40.0, "SALARY", 3200.0),
+        ("Daniel", "Taylor", "Warehouse", "+1-555-0105", 40.0, "HOURLY", 20.00),
+        ("Ashley", "Anderson", "Warehouse", "+1-555-0106", 32.0, "HOURLY", 17.00),
+        ("David", "Thomas", "Warehouse", "+1-555-0107", 40.0, "HOURLY", 18.00),
+        ("Sarah", "Jackson", "Warehouse", "+1-555-0108", 38.0, "SALARY", 3000.0),
+        ("Robert", "White", "Support", "+1-555-0109", 40.0, "HOURLY", 19.50),
+        ("Jennifer", "Harris", "Support", "+1-555-0110", 36.0, "HOURLY", 18.00),
+        ("William", "Martin", "Support", "+1-555-0111", 40.0, "SALARY", 3400.0),
+        ("Amanda", "Garcia", "Support", "+1-555-0112", 32.0, "HOURLY", 17.50),
+        ("Thomas", "Martinez", "Logistics", "+1-555-0113", 40.0, "HOURLY", 19.00),
+        ("Lisa", "Robinson", "Logistics", "+1-555-0114", 38.0, "HOURLY", 18.50),
+        ("Christopher", "Clark", "Warehouse", "+1-555-0115", 40.0, "SALARY", 3100.0),
     ]
 
-    emp_workers = []
-    for num, first, last, dept, phone, email, hire, hours, ctype, pay in employees_data:
+    for i, (fn, ln, dept, phone, hours, ctype, pay) in enumerate(org1_emp_names, 1):
+        num = f"emp1_{i:02d}"
         u = User(
             id=uuid.uuid4(),
+            organization_id=org1.id,
             username=num,
-            email=email,
+            email=f"{fn.lower()}.{ln.lower()}@testorg1.com",
             password_hash=hash_pw("!23QWEasd"),
-            first_name=first,
-            last_name=last,
+            first_name=fn,
+            last_name=ln,
             role=UserRole.EMPLOYEE,
             active=True,
-            preferred_language="en",
-            theme_preference="dark",
         )
         db.add(u)
         db.flush()
 
         w = Worker(
             id=uuid.uuid4(),
-            employee_number=num.upper(),
-            department_id=depts[dept].id,
+            organization_id=org1.id,
+            employee_number=f"ORG1-{i:03d}",
+            department_id=org1_depts[dept].id,
             user_id=u.id,
-            first_name=first,
-            last_name=last,
+            first_name=fn,
+            last_name=ln,
             phone=phone,
-            email=email,
-            hire_date=hire,
+            email=u.email,
+            hire_date=date(2023, 1, 15),
             weekly_contract_hours=hours,
             contract_type=ContractType.SALARY if ctype == "SALARY" else ContractType.HOURLY,
             hourly_rate=pay if ctype == "HOURLY" else None,
@@ -220,93 +203,154 @@ try:
             active=True,
         )
         db.add(w)
-        emp_workers.append(w)
     db.flush()
 
-    # Assign skills to workers (round-robin)
-    skill_list = list(skills.values())
-    for i, w in enumerate(emp_workers):
-        assigned = [skill_list[i % len(skill_list)], skill_list[(i + 2) % len(skill_list)]]
-        for sk in assigned:
-            ws = WorkerSkill(worker_id=w.id, skill_id=sk.id)
-            db.add(ws)
+    # ── 3. Test Organisation 2 ──
+    print("Creating Test Organisation 2...")
+    org2 = Organization(
+        id=uuid.uuid4(),
+        name="Test Organisation 2",
+        slug="test-org-2",
+        domain="org2.scheduler.local",
+        description="Healthcare & Clinical Services",
+        contact_email="testorg2@org.com",
+        contact_tel="+1-555-0202",
+        address="200 Health Center Blvd, Medical District",
+        billing_cycle="ANNUAL",
+        subscription_status="ACTIVE",
+        require_employee_id=False,
+        country_code="GB",
+        active=True,
+    )
+    db.add(org2)
     db.flush()
 
-    # ── 7. Schedules: past 1 month + next 6 months ──
-    print("Creating schedule periods (past 1 month + next 6 months)...")
-    today = date.today()
-    # Past 1 month
-    if today.month == 1:
-        past_month, past_year = 12, today.year - 1
-    else:
-        past_month, past_year = today.month - 1, today.year
+    # Org 2 Departments
+    org2_depts = {}
+    for name in ["Nursing", "Emergency", "Pediatrics"]:
+        d = Department(id=uuid.uuid4(), organization_id=org2.id, name=name, description=f"{name} ward")
+        db.add(d)
+        org2_depts[name] = d
+    db.flush()
 
-    schedule_periods = [(past_month, past_year)]
-    # Current month + next 6
-    m, y = today.month, today.year
-    for _ in range(7):
-        schedule_periods.append((m, y))
-        m += 1
-        if m > 12:
-            m = 1
-            y += 1
+    # Org 2 Manager
+    mgr2 = User(
+        id=uuid.uuid4(),
+        organization_id=org2.id,
+        username="testorg2",
+        email="testorg2@org.com",
+        password_hash=hash_pw("!23QWEasd"),
+        first_name="Dr. Marcus",
+        last_name="Brody",
+        role=UserRole.ORG_ADMIN,
+        active=True,
+    )
+    db.add(mgr2)
+    # Org 2 Scheduler
+    sched2 = User(
+        id=uuid.uuid4(),
+        organization_id=org2.id,
+        username="scheduler2",
+        email="scheduler2@testorg2.com",
+        password_hash=hash_pw("!23QWEasd"),
+        first_name="Clara",
+        last_name="Roster",
+        role=UserRole.SCHEDULER,
+        active=True,
+    )
+    db.add(sched2)
+    db.flush()
 
-    all_workers = [mgr_worker] + emp_workers
-    shift_type_list = list(shift_types.values())
+    # Org 2 - 25 Employees
+    print("Creating 25 Employees for Test Organisation 2...")
+    org2_emp_names = [
+        ("Oliver", "Smith", "Nursing", "+44-20-7946-0101", 40.0, "SALARY", 3800.0),
+        ("Charlotte", "Jones", "Nursing", "+44-20-7946-0102", 37.5, "HOURLY", 22.00),
+        ("George", "Williams", "Nursing", "+44-20-7946-0103", 40.0, "HOURLY", 21.50),
+        ("Amelia", "Brown", "Emergency", "+44-20-7946-0104", 40.0, "SALARY", 4200.0),
+        ("Leo", "Taylor", "Emergency", "+44-20-7946-0105", 37.5, "HOURLY", 24.00),
+        ("Isla", "Davies", "Emergency", "+44-20-7946-0106", 40.0, "HOURLY", 23.50),
+        ("Arthur", "Evans", "Pediatrics", "+44-20-7946-0107", 35.0, "HOURLY", 20.00),
+        ("Mia", "Thomas", "Pediatrics", "+44-20-7946-0108", 40.0, "SALARY", 3600.0),
+        ("Freddie", "Roberts", "Nursing", "+44-20-7946-0109", 40.0, "HOURLY", 21.00),
+        ("Sophia", "Johnson", "Nursing", "+44-20-7946-0110", 37.5, "HOURLY", 22.50),
+        ("Harry", "Walker", "Emergency", "+44-20-7946-0111", 40.0, "SALARY", 4100.0),
+        ("Grace", "Wright", "Emergency", "+44-20-7946-0112", 40.0, "HOURLY", 25.00),
+        ("Jack", "Robinson", "Pediatrics", "+44-20-7946-0113", 35.0, "HOURLY", 19.50),
+        ("Evie", "Thompson", "Pediatrics", "+44-20-7946-0114", 40.0, "SALARY", 3500.0),
+        ("Alf", "White", "Nursing", "+44-20-7946-0115", 37.5, "HOURLY", 21.50),
+        ("Ella", "Hughes", "Nursing", "+44-20-7946-0116", 40.0, "HOURLY", 22.00),
+        ("Jacob", "Edwards", "Emergency", "+44-20-7946-0117", 40.0, "SALARY", 4300.0),
+        ("Freya", "Green", "Emergency", "+44-20-7946-0118", 37.5, "HOURLY", 24.50),
+        ("Charlie", "Hall", "Pediatrics", "+44-20-7946-0119", 40.0, "HOURLY", 20.50),
+        ("Ivy", "Lewis", "Pediatrics", "+44-20-7946-0120", 35.0, "SALARY", 3400.0),
+        ("Oscar", "Harris", "Nursing", "+44-20-7946-0121", 40.0, "HOURLY", 21.00),
+        ("Florence", "Clarke", "Nursing", "+44-20-7946-0122", 37.5, "HOURLY", 22.00),
+        ("Noah", "Patel", "Emergency", "+44-20-7946-0123", 40.0, "SALARY", 4000.0),
+        ("Emily", "Jackson", "Emergency", "+44-20-7946-0124", 40.0, "HOURLY", 23.00),
+        ("Henry", "Wood", "Pediatrics", "+44-20-7946-0125", 35.0, "HOURLY", 20.00),
+    ]
 
-    for month, year in schedule_periods:
-        status = ScheduleStatus.PUBLISHED if (year < today.year or (year == today.year and month < today.month)) else ScheduleStatus.DRAFT
-        sched = Schedule(
+    for i, (fn, ln, dept, phone, hours, ctype, pay) in enumerate(org2_emp_names, 1):
+        num = f"emp2_{i:02d}"
+        u = User(
             id=uuid.uuid4(),
-            month=month,
-            year=year,
-            status=status,
-            generated_by=admin.id if status == ScheduleStatus.PUBLISHED else None,
-            generated_at=datetime.now(timezone.utc) if status == ScheduleStatus.PUBLISHED else None,
-            solver_score="optimal (100%)" if status == ScheduleStatus.PUBLISHED else None,
+            organization_id=org2.id,
+            username=num,
+            email=f"{fn.lower()}.{ln.lower()}@testorg2.com",
+            password_hash=hash_pw("!23QWEasd"),
+            first_name=fn,
+            last_name=ln,
+            role=UserRole.EMPLOYEE,
+            active=True,
         )
-        db.add(sched)
+        db.add(u)
         db.flush()
 
-    # ── 8. Sample constraints (vacations) ──
-    print("Creating sample constraints...")
-    # Give 3 workers a vacation in a future month
-    for i, w in enumerate(emp_workers[:3]):
-        vac_start = today + timedelta(days=30 + i*14)
-        vac_end = vac_start + timedelta(days=6)
-        c = WorkerConstraint(
+        w = Worker(
             id=uuid.uuid4(),
-            worker_id=w.id,
-            constraint_type=ConstraintType.VACATION,
-            start_date=vac_start,
-            end_date=vac_end,
-            priority=1,
-            enabled=True,
+            organization_id=org2.id,
+            employee_number=None, # Org 2 has names only (employee_number is None)
+            department_id=org2_depts[dept].id,
+            user_id=u.id,
+            first_name=fn,
+            last_name=ln,
+            phone=phone,
+            email=u.email,
+            hire_date=date(2023, 6, 1),
+            weekly_contract_hours=hours,
+            contract_type=ContractType.SALARY if ctype == "SALARY" else ContractType.HOURLY,
+            hourly_rate=pay if ctype == "HOURLY" else None,
+            monthly_salary=pay if ctype == "SALARY" else None,
+            active=True,
         )
-        db.add(c)
+        db.add(w)
+    db.flush()
 
-    # No-weekends for 2 workers
-    for w in emp_workers[5:7]:
-        c = WorkerConstraint(
-            id=uuid.uuid4(),
-            worker_id=w.id,
-            constraint_type=ConstraintType.NO_WEEKENDS,
-            start_date=today,
-            end_date=today + timedelta(days=180),
-            priority=2,
-            enabled=True,
-        )
-        db.add(c)
+    # ── 4. Shift Types ──
+    print("Creating shift types...")
+    shift_types_data = [
+        ("Morning", "#22C55E", time(6, 0), time(14, 0), 8.0, False, False),
+        ("Day", "#3B82F6", time(9, 0), time(17, 0), 8.0, False, False),
+        ("Evening", "#F59E0B", time(14, 0), time(22, 0), 8.0, False, False),
+        ("Night", "#EF4444", time(22, 0), time(6, 0), 8.0, True, True),
+    ]
+    for name, color, st, et, dur, night, rest in shift_types_data:
+        st_obj = ShiftType(id=uuid.uuid4(), name=name, color=color, start_time=st, end_time=et, duration=dur, is_night_shift=night, requires_rest_day=rest)
+        db.add(st_obj)
+    db.flush()
+
+    # ── 5. Schedules ──
+    print("Creating schedule period...")
+    today = date.today()
+    sched1 = Schedule(id=uuid.uuid4(), month=today.month, year=today.year, status=ScheduleStatus.DRAFT)
+    db.add(sched1)
 
     db.commit()
-    print("=== DATABASE SEED COMPLETE ===")
+    print("=== SEED COMPLETE ===")
+    print(f"  Organizations: {db.query(Organization).count()}")
     print(f"  Users: {db.query(User).count()}")
     print(f"  Workers: {db.query(Worker).count()}")
-    print(f"  Departments: {db.query(Department).count()}")
-    print(f"  Skills: {db.query(Skill).count()}")
-    print(f"  Shift Types: {db.query(ShiftType).count()}")
-    print(f"  Schedules: {db.query(Schedule).count()}")
-    print(f"  Constraints: {db.query(WorkerConstraint).count()}")
 
 except Exception as e:
     db.rollback()
@@ -326,48 +370,28 @@ def main():
     c.set_missing_host_key_policy(paramiko.AutoAddPolicy())
     c.connect(HOST, username=USER, password=PASS, timeout=10)
 
-    # 1. Upload the seed script into the backend container
     print("\n[1/4] Uploading seed script to server...")
     sftp = c.open_sftp()
     with sftp.file("/home/ad/app/seed_db.py", "w") as f:
         f.write(SEED_SCRIPT)
     sftp.close()
-    print("  ✓ seed_db.py uploaded")
 
-    # 2. Copy seed script into backend container
     print("\n[2/4] Copying seed script into backend container...")
     out = ssh_exec(c, f"echo '{PASS}' | sudo -S docker cp /home/ad/app/seed_db.py scheduler_backend:/app/seed_db.py", timeout=15)
     print(f"  {out.strip()}")
 
-    # 3. Execute the seed script inside the container
     print("\n[3/4] Executing database reset & seed inside backend container...")
-    out = ssh_exec(c,
-        f"echo '{PASS}' | sudo -S docker exec scheduler_backend python /app/seed_db.py",
-        timeout=60
-    )
+    out = ssh_exec(c, f"echo '{PASS}' | sudo -S docker exec scheduler_backend python /app/seed_db.py", timeout=60)
     print(out)
 
-    # 4. Restart backend to pick up clean state
     print("\n[4/4] Restarting backend container...")
-    out = ssh_exec(c,
-        f"echo '{PASS}' | sudo -S docker restart scheduler_backend",
-        timeout=30
-    )
+    out = ssh_exec(c, f"echo '{PASS}' | sudo -S docker restart scheduler_backend", timeout=30)
     print(f"  {out.strip()}")
 
     time.sleep(5)
 
-    # Verify health
-    _, o, _ = c.exec_command('curl -s http://localhost:8000/health 2>&1')
+    _, o, _ = c.exec_command('curl -s http://localhost:8000/api/v1/health 2>&1')
     print(f"\n=== HEALTH CHECK ===\n{o.read().decode()}")
-
-    # Verify login
-    _, o, _ = c.exec_command(
-        "curl -s -X POST http://localhost:8000/api/v1/auth/login "
-        "-H 'Content-Type: application/json' "
-        "-d '{\"email\":\"admin@admin.com\",\"password\":\"!23QWEasd\"}' 2>&1"
-    )
-    print(f"=== LOGIN TEST ===\n{o.read().decode()}")
 
     c.close()
     print("\n" + "=" * 70)

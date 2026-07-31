@@ -201,7 +201,7 @@ export const ImportExportPage: React.FC = () => {
               <div className="p-4 bg-slate-900/60 rounded-lg border border-slate-700/60 flex items-center justify-between">
                 <div>
                   <h3 className="text-sm font-bold text-white">Employee Roster (.csv)</h3>
-                  <p className="text-xs text-slate-400">All registered workers and department codes</p>
+                  <p className="text-xs text-slate-400">All registered employees and department codes</p>
                 </div>
                 <button
                   onClick={() =>
@@ -209,7 +209,7 @@ export const ImportExportPage: React.FC = () => {
                   }
                   className="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold rounded-lg transition"
                 >
-                  Export Workers CSV
+                  Export Employees CSV
                 </button>
               </div>
 
@@ -236,9 +236,9 @@ export const ImportExportPage: React.FC = () => {
       {activeTab === 'import' && (
         <div className="bg-slate-800 p-6 rounded-xl border border-slate-700 space-y-6">
           <div>
-            <h2 className="text-lg font-bold text-white">Worker Data Bulk Import Wizard</h2>
+            <h2 className="text-lg font-bold text-white">Employee Data Bulk Import Wizard</h2>
             <p className="text-slate-400 text-sm mt-1">
-              Upload a `.csv` or `.xlsx` spreadsheet containing worker columns: <code className="text-indigo-300">Worker Code</code>, <code className="text-indigo-300">First Name</code>, <code className="text-indigo-300">Last Name</code>, <code className="text-indigo-300">Email</code>, <code className="text-indigo-300">Department</code>.
+              Upload a `.csv` or `.xlsx` spreadsheet containing employee columns: <code className="text-indigo-300">Employee Code</code>, <code className="text-indigo-300">First Name</code>, <code className="text-indigo-300">Last Name</code>, <code className="text-indigo-300">Email</code>, <code className="text-indigo-300">Department</code>.
             </p>
           </div>
 

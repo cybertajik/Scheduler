@@ -7,15 +7,28 @@ from openpyxl import load_workbook
 from app.models import Worker, Department
 
 class ImportService:
+    MAX_FILE_SIZE = 5 * 1024 * 1024 # 5 MB limit
+
+    @staticmethod
+    def sanitize_cell_value(val: Any) -> str:
+        """Sanitize cell value to prevent CSV Formula Injection (=, +, -, @)."""
+        val_str = str(val or "").strip()
+        if val_str and val_str[0] in ('=', '+', '-', '@'):
+            return "'" + val_str
+        return val_str
+
     @staticmethod
     def parse_file_rows(file_contents: bytes, filename: str) -> List[Dict[str, str]]:
         """Parse raw file bytes into list of dictionary row records (CSV or XLSX)."""
+        if len(file_contents) > ImportService.MAX_FILE_SIZE:
+            raise ValueError("File size exceeds maximum allowed limit of 5MB.")
+
         rows: List[Dict[str, str]] = []
         if filename.endswith(".csv"):
             text_data = file_contents.decode("utf-8-sig", errors="replace")
             reader = csv.DictReader(io.StringIO(text_data))
             for row in reader:
-                rows.append({k.strip(): (v.strip() if v else "") for k, v in row.items() if k})
+                rows.append({k.strip(): ImportService.sanitize_cell_value(v) for k, v in row.items() if k})
         elif filename.endswith(".xlsx"):
             wb = load_workbook(filename=io.BytesIO(file_contents), data_only=True)
             ws = wb.active
@@ -25,7 +38,7 @@ class ImportService:
                     row_dict = {}
                     for i, h in enumerate(headers):
                         val = row[i] if i < len(row) else ""
-                        row_dict[h] = str(val or "").strip()
+                        row_dict[h] = ImportService.sanitize_cell_value(val)
                     rows.append(row_dict)
         else:
             raise ValueError("Unsupported file format. Please upload a .csv or .xlsx file.")

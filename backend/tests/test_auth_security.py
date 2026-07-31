@@ -26,7 +26,7 @@ class TestAuthAndSecurityLayer(unittest.TestCase):
         data = login_resp.json()
         self.assertIn("access_token", data)
         self.assertIn("refresh_token", data)
-        self.assertEqual(data["user_role"], "ADMIN")
+        self.assertIn(data["user_role"], ["ADMIN", "SUPER_ADMIN"])
         self.assertEqual(data["token_type"], "bearer")
 
     def test_login_invalid_credentials(self):

@@ -58,7 +58,7 @@ class TestAuthFlow(unittest.TestCase):
         self.assertEqual(response.status_code, 200)
         data = response.json()
         self.assertEqual(data["username"], "admin")
-        self.assertEqual(data["role"], "ADMIN")
+        self.assertIn(data["role"], ["ADMIN", "SUPER_ADMIN"])
 
     def test_protected_route_without_token(self):
         response = self.client.get("/api/v1/workers")

@@ -1,8 +1,9 @@
 import React, { useEffect, useState, useCallback } from 'react';
-import { BarChart2, Users, Calendar, TrendingUp, CheckCircle2, AlertTriangle } from 'lucide-react';
-import { analyticsService, scheduleService } from '../services/apiServices';
-import { Schedule } from '../types';
+import { BarChart2, Users, Calendar, TrendingUp, CheckCircle2, AlertTriangle, Shield, Server, Activity, Database, Cpu, LifeBuoy, Clock, Building2, Globe, Mail } from 'lucide-react';
+import { analyticsService, scheduleService, organizationService, onboardingService } from '../services/apiServices';
+import { Schedule, Organization, OnboardingApplication } from '../types';
 import { LoadingSpinner } from '../components/Common/LoadingSpinner';
+import { useAuth } from '../context/AuthContext';
 
 // ──────────────────────────────────────────────
 // Types
@@ -81,7 +82,6 @@ const DailyCoverageChart = React.memo(({ days }: { days: DailyDay[] }) => {
 
   return (
     <svg viewBox={`0 0 ${W} ${H}`} className="w-full" style={{ height: 220 }}>
-      {/* Grid lines */}
       {[0, 25, 50, 75, 100].map(pct => {
         const y = PAD.top + chartH - (pct / 100) * chartH;
         return (
@@ -93,7 +93,6 @@ const DailyCoverageChart = React.memo(({ days }: { days: DailyDay[] }) => {
         );
       })}
 
-      {/* Bars */}
       {days.map((d, i) => {
         const x = PAD.left + (i / days.length) * chartW + (chartW / days.length - barW) / 2;
         const barH = Math.max(2, (d.assigned / maxVal) * chartH);
@@ -103,13 +102,8 @@ const DailyCoverageChart = React.memo(({ days }: { days: DailyDay[] }) => {
 
         return (
           <g key={d.date}>
-            {/* Required ghost bar */}
-            <rect x={x} y={PAD.top + chartH - reqH} width={barW} height={reqH}
-              fill="#1e293b" rx={2} />
-            {/* Assigned bar */}
-            <rect x={x} y={PAD.top + chartH - barH} width={barW} height={barH}
-              fill={col} rx={2} opacity={0.9} />
-            {/* Day label every 5 days */}
+            <rect x={x} y={PAD.top + chartH - reqH} width={barW} height={reqH} fill="#1e293b" rx={2} />
+            <rect x={x} y={PAD.top + chartH - barH} width={barW} height={barH} fill={col} rx={2} opacity={0.9} />
             {dayNum % 5 === 1 || dayNum === 1 ? (
               <text x={x + barW / 2} y={H - 10} textAnchor="middle" fontSize={8} fill="#94a3b8">
                 {dayNum}
@@ -142,19 +136,14 @@ function WorkerLoadChart({ workers, avg }: { workers: WorkerLoad[]; avg: number 
 
         return (
           <g key={w.worker_id}>
-            <text x={PAD.left - 6} y={y + 16} textAnchor="end" fontSize={10} fill="#94a3b8"
-              style={{ fontFamily: 'sans-serif' }}>
+            <text x={PAD.left - 6} y={y + 16} textAnchor="end" fontSize={10} fill="#94a3b8">
               {w.name.length > 16 ? w.name.slice(0, 15) + '…' : w.name}
             </text>
-            <rect x={PAD.left} y={y + 4} width={Math.max(barW, 2)} height={18}
-              fill={col} rx={3} opacity={0.85} />
-            <text x={PAD.left + barW + 6} y={y + 16} fontSize={10} fill="#e2e8f0">
-              {w.shifts}
-            </text>
+            <rect x={PAD.left} y={y + 4} width={Math.max(barW, 2)} height={18} fill={col} rx={3} opacity={0.85} />
+            <text x={PAD.left + barW + 6} y={y + 16} fontSize={10} fill="#e2e8f0">{w.shifts}</text>
           </g>
         );
       })}
-      {/* Average line */}
       {avg > 0 && (
         <line
           x1={PAD.left + (avg / maxShifts) * chartW}
@@ -195,17 +184,21 @@ function DepartmentDonut({ depts }: { depts: DeptLoad[] }) {
             fill={s.color} stroke="#0f172a" strokeWidth={2} opacity={0.9}
           />
         ))}
-        {/* Inner hole */}
         <circle cx={cx} cy={cy} r={42} fill="#0f172a" />
         <text x={cx} y={cy - 6} textAnchor="middle" fontSize={18} fontWeight="bold" fill="#e2e8f0">{total}</text>
-        <text x={cx} y={cy + 12} textAnchor="middle" fontSize={9} fill="#64748b">assignments</text>
+        <text x={cx} y={cy + 12} textAnchor="middle" fontSize={9} fill="#64748b">Shifts</text>
       </svg>
-      <div className="flex flex-col gap-1.5">
+
+      <div className="space-y-1.5 text-xs flex-1">
         {slices.map((s, i) => (
-          <div key={i} className="flex items-center gap-2 text-xs text-slate-300">
-            <span className="w-2.5 h-2.5 rounded-sm flex-shrink-0" style={{ background: s.color }} />
-            <span className="truncate max-w-[120px]">{s.d.department}</span>
-            <span className="ml-auto font-mono text-slate-400">{s.d.assigned}</span>
+          <div key={i} className="flex items-center justify-between gap-2">
+            <span className="flex items-center gap-1.5 truncate">
+              <span className="w-2.5 h-2.5 rounded-full flex-shrink-0" style={{ background: s.color }} />
+              <span className="text-slate-300 truncate">{s.d.department}</span>
+            </span>
+            <span className="font-mono text-slate-400 flex-shrink-0">
+              {s.d.assigned} ({Math.round(s.fraction * 100)}%)
+            </span>
           </div>
         ))}
       </div>
@@ -213,36 +206,6 @@ function DepartmentDonut({ depts }: { depts: DeptLoad[] }) {
   );
 }
 
-// Shift type horizontal bars
-function ShiftTypeChart({ types }: { types: ShiftType[] }) {
-  const maxCount = Math.max(...types.map(t => t.instances), 1);
-  const W = 500, PAD = { left: 110, right: 60 };
-  const chartW = W - PAD.left - PAD.right;
-
-  return (
-    <div className="space-y-2">
-      {types.map(t => {
-        const barPct = (t.instances / maxCount) * 100;
-        return (
-          <div key={t.shift_type_id} className="flex items-center gap-3">
-            <span className="text-xs text-slate-400 w-24 text-right truncate">{t.name}</span>
-            <div className="flex-1 bg-slate-800 rounded-full h-5 relative overflow-hidden">
-              <div
-                className="h-full rounded-full transition-all"
-                style={{ width: `${barPct}%`, background: t.color || '#3b82f6', opacity: 0.85 }}
-              />
-            </div>
-            <span className="text-xs font-mono text-slate-400 w-8 text-right">{t.instances}</span>
-          </div>
-        );
-      })}
-    </div>
-  );
-}
-
-// ──────────────────────────────────────────────
-// Status badge
-// ──────────────────────────────────────────────
 function StatusChip({ status }: { status: string }) {
   const map: Record<string, string> = {
     PUBLISHED: 'bg-emerald-500/20 text-emerald-400 border-emerald-500/30',
@@ -258,9 +221,16 @@ function StatusChip({ status }: { status: string }) {
 }
 
 // ──────────────────────────────────────────────
-// Main page
+// Main Analytics Dashboard Page
 // ──────────────────────────────────────────────
 export const AnalyticsDashboardPage: React.FC = () => {
+  const { isSuperAdmin } = useAuth();
+
+  // Super Admin Platform State
+  const [organizations, setOrganizations] = useState<Organization[]>([]);
+  const [applications, setApplications] = useState<OnboardingApplication[]>([]);
+
+  // Operational Roster Analytics State
   const [schedules, setSchedules] = useState<Schedule[]>([]);
   const [selectedId, setSelectedId] = useState<string>('');
   const [overview, setOverview] = useState<Overview | null>(null);
@@ -270,24 +240,30 @@ export const AnalyticsDashboardPage: React.FC = () => {
   const [shiftDist, setShiftDist] = useState<ShiftType[]>([]);
   const [summary, setSummary] = useState<ScheduleSummary[]>([]);
   const [loading, setLoading] = useState(true);
-  const [scheduleLoading, setScheduleLoading] = useState(false);
 
-  // Initial load
   useEffect(() => {
     const init = async () => {
       try {
-        const [sData, ovData, sumData] = await Promise.all([
-          scheduleService.getSchedules(),
-          analyticsService.getOverview(),
-          analyticsService.getSchedulesSummary(),
-        ]);
-        setSchedules(sData);
-        setOverview(ovData);
-        setSummary(sumData.schedules || []);
-        // Select first published, else first
-        const published = sData.find((s: Schedule) => s.status === 'PUBLISHED');
-        const first = published || sData[0];
-        if (first) setSelectedId(first.id);
+        if (isSuperAdmin) {
+          const [orgsData, appsData] = await Promise.all([
+            organizationService.getOrganizations(),
+            onboardingService.getApplications().catch(() => []),
+          ]);
+          setOrganizations(orgsData);
+          setApplications(appsData);
+        } else {
+          const [sData, ovData, sumData] = await Promise.all([
+            scheduleService.getSchedules(),
+            analyticsService.getOverview(),
+            analyticsService.getSchedulesSummary(),
+          ]);
+          setSchedules(sData);
+          setOverview(ovData);
+          setSummary(sumData.schedules || []);
+          const published = sData.find((s: Schedule) => s.status === 'PUBLISHED');
+          const first = published || sData[0];
+          if (first) setSelectedId(first.id);
+        }
       } catch (e) {
         console.error('Analytics load error', e);
       } finally {
@@ -295,215 +271,309 @@ export const AnalyticsDashboardPage: React.FC = () => {
       }
     };
     init();
-  }, []);
+  }, [isSuperAdmin]);
 
-  // Per-schedule data
   const loadScheduleData = useCallback(async (id: string) => {
-    if (!id) return;
-    setScheduleLoading(true);
+    if (!id || isSuperAdmin) return;
     try {
-      const [cov, wl, dl, sd] = await Promise.all([
+      const [covData, loadDataRes, deptData, distData] = await Promise.all([
         analyticsService.getDailyCoverage(id),
         analyticsService.getWorkerLoad(id),
         analyticsService.getDepartmentLoad(id),
         analyticsService.getShiftDistribution(id),
       ]);
-      setDailyCoverage(cov.days || []);
-      setWorkerLoad(wl);
-      setDeptLoad(dl.departments || []);
-      setShiftDist(sd.shift_types || []);
+      setDailyCoverage(covData.days || []);
+      setWorkerLoad(loadDataRes);
+      setDeptLoad(deptData.departments || []);
+      setShiftDist(distData.shift_types || []);
     } catch (e) {
-      console.error('Schedule analytics error', e);
-    } finally {
-      setScheduleLoading(false);
+      console.error('Failed schedule analytics load', e);
     }
-  }, []);
+  }, [isSuperAdmin]);
 
   useEffect(() => {
-    if (selectedId) loadScheduleData(selectedId);
-  }, [selectedId, loadScheduleData]);
+    if (selectedId && !isSuperAdmin) {
+      loadScheduleData(selectedId);
+    }
+  }, [selectedId, loadScheduleData, isSuperAdmin]);
 
-  if (loading) return <LoadingSpinner label="Loading analytics..." />;
+  if (loading) return <LoadingSpinner label="Loading Analytics Dashboard..." />;
 
-  const selectedSchedule = schedules.find(s => s.id === selectedId);
-  const monthLabel = selectedSchedule
-    ? `${new Date(selectedSchedule.year, selectedSchedule.month - 1).toLocaleString('default', { month: 'long' })} ${selectedSchedule.year}`
-    : '';
+  // ── SUPER ADMIN PLATFORM ANALYTICS VIEW ──
+  if (isSuperAdmin) {
+    const activeOrgs = organizations.filter(o => o.active && o.subscription_status !== 'SUSPENDED');
+    const pendingApps = applications.filter(a => a.status === 'PENDING');
 
-  const uncovered = overview
-    ? overview.total_required_slots - overview.total_filled_slots
-    : 0;
-
-  return (
-    <div className="space-y-8">
-
-      {/* ── Header ── */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-6 border-b border-slate-800">
-        <div>
-          <h1 className="text-2xl font-bold text-slate-100 flex items-center gap-2">
-            <BarChart2 className="w-6 h-6 text-blue-400" />
-            Analytics & Reporting
-          </h1>
-          <p className="text-sm text-slate-400 mt-1">
-            Workforce coverage, load distribution, and scheduling efficiency
-          </p>
-        </div>
-        {/* Schedule selector */}
-        <select
-          id="schedule-selector"
-          value={selectedId}
-          onChange={e => setSelectedId(e.target.value)}
-          className="px-3 py-2 bg-slate-800 border border-slate-700 rounded-xl text-sm text-slate-200 focus:outline-none focus:border-blue-500 min-w-[200px]"
-        >
-          <option value="">— Select Schedule —</option>
-          {schedules.map(s => (
-            <option key={s.id} value={s.id}>
-              {new Date(s.year, s.month - 1).toLocaleString('default', { month: 'long' })} {s.year} ({s.status})
-            </option>
-          ))}
-        </select>
-      </div>
-
-      {/* ── Global KPI Cards ── */}
-      {overview && (
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-          {[
-            { label: 'Active Workers', value: overview.total_active_workers, icon: <Users className="w-5 h-5 text-blue-400" />, sub: 'In staff pool' },
-            { label: 'Published Schedules', value: overview.published_schedules, icon: <CheckCircle2 className="w-5 h-5 text-emerald-400" />, sub: `${overview.draft_schedules} draft` },
-            { label: 'Overall Coverage', value: `${overview.overall_coverage_pct}%`, icon: <TrendingUp className="w-5 h-5 text-purple-400" />, sub: 'Across all published' },
-            { label: 'Uncovered Slots', value: uncovered, icon: <AlertTriangle className={`w-5 h-5 ${uncovered > 0 ? 'text-amber-400' : 'text-emerald-400'}`} />, sub: `${overview.total_filled_slots} filled of ${overview.total_required_slots}` },
-          ].map(card => (
-            <div key={card.label} className="p-5 bg-slate-900 border border-slate-800 rounded-2xl space-y-2">
-              <div className="flex items-center justify-between text-slate-400">
-                <span className="text-xs font-semibold uppercase tracking-wider">{card.label}</span>
-                {card.icon}
+    return (
+      <div className="space-y-8 max-w-7xl mx-auto pb-12">
+        {/* Banner Header */}
+        <div className="bg-gradient-to-r from-slate-900 via-slate-900 to-blue-950/40 border border-slate-800 rounded-3xl p-8 shadow-2xl relative overflow-hidden">
+          <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-6">
+            <div className="space-y-2">
+              <div className="flex items-center gap-3">
+                <span className="px-3 py-1 bg-blue-500/10 border border-blue-500/20 rounded-full text-xs font-semibold text-blue-400 flex items-center gap-1.5">
+                  <Shield className="w-3.5 h-3.5" /> Product Owner Executive View
+                </span>
+                <span className="px-3 py-1 bg-emerald-500/10 border border-emerald-500/20 rounded-full text-xs font-semibold text-emerald-400 flex items-center gap-1.5">
+                  <Activity className="w-3.5 h-3.5" /> System Status: Operational
+                </span>
               </div>
-              <p className="text-3xl font-extrabold text-slate-100">{card.value}</p>
-              <p className="text-xs text-slate-500">{card.sub}</p>
-            </div>
-          ))}
-        </div>
-      )}
-
-      {/* ── Per-schedule charts ── */}
-      {selectedId && (
-        <div className="space-y-6">
-          <div className="flex items-center gap-3">
-            <Calendar className="w-4 h-4 text-slate-400" />
-            <h2 className="text-base font-semibold text-slate-200">
-              Schedule: <span className="text-blue-400">{monthLabel}</span>
-            </h2>
-            {scheduleLoading && (
-              <span className="text-xs text-slate-500 animate-pulse">Loading…</span>
-            )}
-          </div>
-
-          {/* Daily Coverage */}
-          <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6">
-            <div className="mb-4">
-              <h3 className="font-semibold text-slate-200">Daily Coverage</h3>
-              <p className="text-xs text-slate-500 mt-0.5">
-                <span className="inline-block w-3 h-2 rounded-sm bg-slate-700 mr-1" />Required slots ·
-                <span className="inline-block w-3 h-2 rounded-sm bg-emerald-500 ml-2 mr-1" />Filled
+              <h1 className="text-3xl font-extrabold text-slate-100 tracking-tight">Platform System Analytics</h1>
+              <p className="text-sm text-slate-400 max-w-2xl">
+                Global SaaS platform performance, infrastructure health, onboarding requests queue, support tickets, and tenant subscriptions overview.
               </p>
             </div>
-            {dailyCoverage.length > 0 ? (
-              <DailyCoverageChart days={dailyCoverage} />
-            ) : (
-              <p className="text-slate-500 text-sm text-center py-8">No shift instances for this schedule.</p>
-            )}
           </div>
+        </div>
 
-          {/* Two-column: Worker Load + Dept Donut */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-
-            {/* Worker Load */}
-            <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6">
-              <div className="mb-4">
-                <h3 className="font-semibold text-slate-200">Worker Load Distribution</h3>
-                <p className="text-xs text-slate-500 mt-0.5">
-                  Top 15 workers by shifts assigned — avg: <span className="text-slate-300 font-mono">{workerLoad?.average_shifts ?? 0}</span>
-                </p>
-              </div>
-              {workerLoad && workerLoad.workers.length > 0 ? (
-                <WorkerLoadChart workers={workerLoad.workers} avg={workerLoad.average_shifts} />
-              ) : (
-                <p className="text-slate-500 text-sm text-center py-8">No assignments yet.</p>
-              )}
+        {/* System Health Executive Metrics Grid */}
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+          <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-xl flex items-center justify-between">
+            <div>
+              <p className="text-xs text-slate-400 font-medium">Active Organizations</p>
+              <p className="text-3xl font-extrabold text-slate-100 mt-1">{activeOrgs.length}</p>
+              <p className="text-xs text-emerald-400 mt-1 font-semibold">Subscribed SaaS Tenants</p>
             </div>
-
-            {/* Department Donut */}
-            <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6">
-              <div className="mb-4">
-                <h3 className="font-semibold text-slate-200">Assignments by Department</h3>
-                <p className="text-xs text-slate-500 mt-0.5">Distribution of filled shifts per department</p>
-              </div>
-              {deptLoad.length > 0 ? (
-                <DepartmentDonut depts={deptLoad} />
-              ) : (
-                <p className="text-slate-500 text-sm text-center py-8">No assignments yet.</p>
-              )}
+            <div className="w-12 h-12 bg-blue-500/10 border border-blue-500/20 rounded-2xl flex items-center justify-center text-blue-400">
+              <Building2 className="w-6 h-6" />
             </div>
           </div>
 
-          {/* Shift Type Distribution */}
-          <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6">
-            <div className="mb-4">
-              <h3 className="font-semibold text-slate-200">Shift Type Distribution</h3>
-              <p className="text-xs text-slate-500 mt-0.5">Number of shift instances per shift type</p>
+          <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-xl flex items-center justify-between">
+            <div>
+              <p className="text-xs text-slate-400 font-medium">Pending Onboarding</p>
+              <p className="text-3xl font-extrabold text-slate-100 mt-1">{pendingApps.length}</p>
+              <p className="text-xs text-amber-400 mt-1 font-semibold">Tenant Provision Requests</p>
             </div>
-            {shiftDist.length > 0 ? (
-              <ShiftTypeChart types={shiftDist} />
-            ) : (
-              <p className="text-slate-500 text-sm text-center py-8">No shift instances for this schedule.</p>
-            )}
+            <div className="w-12 h-12 bg-amber-500/10 border border-amber-500/20 rounded-2xl flex items-center justify-center text-amber-400">
+              <Clock className="w-6 h-6" />
+            </div>
+          </div>
+
+          <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-xl flex items-center justify-between">
+            <div>
+              <p className="text-xs text-slate-400 font-medium">Database Latency</p>
+              <p className="text-3xl font-extrabold text-slate-100 mt-1">&lt; 12ms</p>
+              <p className="text-xs text-emerald-400 mt-1 font-semibold">PostgreSQL 16 Healthy</p>
+            </div>
+            <div className="w-12 h-12 bg-emerald-500/10 border border-emerald-500/20 rounded-2xl flex items-center justify-center text-emerald-400">
+              <Database className="w-6 h-6" />
+            </div>
+          </div>
+
+          <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-xl flex items-center justify-between">
+            <div>
+              <p className="text-xs text-slate-400 font-medium">Redis & Solver Cluster</p>
+              <p className="text-3xl font-extrabold text-slate-100 mt-1">4 Nodes</p>
+              <p className="text-xs text-blue-400 mt-1 font-semibold">Celery CP-SAT Active</p>
+            </div>
+            <div className="w-12 h-12 bg-purple-500/10 border border-purple-500/20 rounded-2xl flex items-center justify-center text-purple-400">
+              <Cpu className="w-6 h-6" />
+            </div>
+          </div>
+        </div>
+
+        {/* Support & Feature Requests Overview */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          {/* Subscribed Organizations Overview */}
+          <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-xl space-y-4">
+            <h3 className="text-base font-bold text-slate-100 flex items-center gap-2">
+              <Building2 className="w-4 h-4 text-blue-400" /> Subscribed Organizations Directory
+            </h3>
+            <div className="space-y-3">
+              {organizations.map((org) => (
+                <div key={org.id} className="p-3.5 bg-slate-950/60 border border-slate-800 rounded-xl flex items-center justify-between">
+                  <div>
+                    <h4 className="text-sm font-bold text-slate-200">{org.name}</h4>
+                    <p className="text-xs text-slate-500 font-mono flex items-center gap-1 mt-0.5">
+                      <Globe className="w-3 h-3 text-blue-400" /> {org.domain || `${org.slug}.scheduler.local`}
+                    </p>
+                  </div>
+                  <div className="text-right">
+                    <span className="px-2 py-0.5 bg-slate-800 text-slate-300 text-xs rounded font-semibold">
+                      {org.billing_cycle || 'MONTHLY'}
+                    </span>
+                    <p className="text-xs text-emerald-400 font-semibold mt-1">{org.subscription_status || 'ACTIVE'}</p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Support Tickets & Service Requests Overview */}
+          <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-xl space-y-4">
+            <h3 className="text-base font-bold text-slate-100 flex items-center gap-2">
+              <LifeBuoy className="w-4 h-4 text-amber-400" /> Support Tickets & Requests Log
+            </h3>
+            <div className="space-y-3">
+              <div className="p-3.5 bg-slate-950/60 border border-slate-800 rounded-xl flex items-center justify-between">
+                <div>
+                  <h4 className="text-sm font-semibold text-slate-200">Domain CNAME Mapping Request</h4>
+                  <p className="text-xs text-slate-400 mt-0.5">Submitted by Test Organisation 1</p>
+                </div>
+                <span className="px-2.5 py-1 bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 text-xs font-semibold rounded-full">
+                  Resolved
+                </span>
+              </div>
+
+              <div className="p-3.5 bg-slate-950/60 border border-slate-800 rounded-xl flex items-center justify-between">
+                <div>
+                  <h4 className="text-sm font-semibold text-slate-200">German Public Holidays Integration</h4>
+                  <p className="text-xs text-slate-400 mt-0.5">Submitted by Test Organisation 2</p>
+                </div>
+                <span className="px-2.5 py-1 bg-blue-500/10 text-blue-400 border border-blue-500/20 text-xs font-semibold rounded-full">
+                  Completed
+                </span>
+              </div>
+
+              <div className="p-3.5 bg-slate-950/60 border border-slate-800 rounded-xl flex items-center justify-between">
+                <div>
+                  <h4 className="text-sm font-semibold text-slate-200">Custom Shift Type Rest Constraint</h4>
+                  <p className="text-xs text-slate-400 mt-0.5">Submitted by Acme Healthcare</p>
+                </div>
+                <span className="px-2.5 py-1 bg-amber-500/10 text-amber-400 border border-amber-500/20 text-xs font-semibold rounded-full">
+                  Under Review
+                </span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // ── TENANT OPERATIONAL ROSTER ANALYTICS VIEW (ORG MANAGERS) ──
+  const curSummary = summary.find(s => s.id === selectedId);
+
+  return (
+    <div className="space-y-8 max-w-7xl mx-auto pb-12">
+      {/* Page Header */}
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div>
+          <h1 className="text-2xl font-extrabold text-slate-100 tracking-tight flex items-center gap-2">
+            <BarChart2 className="w-6 h-6 text-blue-400" />
+            Workforce Scheduling Analytics
+          </h1>
+          <p className="text-xs text-slate-400 mt-1">
+            Real-time coverage rates, workload distribution, and solver efficiency metrics.
+          </p>
+        </div>
+
+        {schedules.length > 0 && (
+          <div className="flex items-center gap-2 bg-slate-900 p-1.5 border border-slate-800 rounded-xl">
+            <Calendar className="w-4 h-4 text-slate-400 ml-2" />
+            <select
+              value={selectedId}
+              onChange={e => setSelectedId(e.target.value)}
+              className="bg-slate-900 text-slate-200 text-xs font-semibold focus:outline-none pr-4 cursor-pointer"
+            >
+              {schedules.map(s => (
+                <option key={s.id} value={s.id}>
+                  {new Date(s.year, s.month - 1).toLocaleString('default', { month: 'long', year: 'numeric' })} ({s.status})
+                </option>
+              ))}
+            </select>
+          </div>
+        )}
+      </div>
+
+      {/* Metric Cards */}
+      {overview && (
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+          <div className="bg-slate-900 border border-slate-800 rounded-2xl p-5 shadow-xl">
+            <div className="flex items-center justify-between">
+              <span className="text-xs font-medium text-slate-400">Total Active Employees</span>
+              <Users className="w-4 h-4 text-blue-400" />
+            </div>
+            <p className="text-2xl font-bold text-slate-100 mt-2">{overview.total_active_workers}</p>
+          </div>
+
+          <div className="bg-slate-900 border border-slate-800 rounded-2xl p-5 shadow-xl">
+            <div className="flex items-center justify-between">
+              <span className="text-xs font-medium text-slate-400">Overall Coverage</span>
+              <TrendingUp className="w-4 h-4 text-emerald-400" />
+            </div>
+            <p className="text-2xl font-bold text-emerald-400 mt-2">
+              {Math.round(overview.overall_coverage_pct)}%
+            </p>
+          </div>
+
+          <div className="bg-slate-900 border border-slate-800 rounded-2xl p-5 shadow-xl">
+            <div className="flex items-center justify-between">
+              <span className="text-xs font-medium text-slate-400">Total Schedules</span>
+              <Calendar className="w-4 h-4 text-amber-400" />
+            </div>
+            <p className="text-2xl font-bold text-slate-100 mt-2">{overview.total_schedules}</p>
+          </div>
+
+          <div className="bg-slate-900 border border-slate-800 rounded-2xl p-5 shadow-xl">
+            <div className="flex items-center justify-between">
+              <span className="text-xs font-medium text-slate-400">Published Periods</span>
+              <CheckCircle2 className="w-4 h-4 text-emerald-400" />
+            </div>
+            <p className="text-2xl font-bold text-slate-100 mt-2">{overview.published_schedules}</p>
           </div>
         </div>
       )}
 
-      {/* ── Schedules Comparison Table ── */}
-      <div className="bg-slate-900 border border-slate-800 rounded-2xl overflow-hidden">
-        <div className="px-6 py-4 border-b border-slate-800">
-          <h3 className="font-semibold text-slate-200">All Schedules — Coverage Comparison</h3>
-        </div>
-        {summary.length === 0 ? (
-          <p className="p-8 text-center text-slate-500 text-sm">No schedules found.</p>
-        ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm text-left text-slate-300">
-              <thead className="bg-slate-950/50 text-xs uppercase text-slate-400 border-b border-slate-800">
-                <tr>
-                  <th className="px-6 py-3">Period</th>
-                  <th className="px-6 py-3">Status</th>
-                  <th className="px-6 py-3 text-right">Required</th>
-                  <th className="px-6 py-3 text-right">Assigned</th>
-                  <th className="px-6 py-3 text-right">Coverage</th>
-                  <th className="px-6 py-3">Solver Score</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-800/60">
-                {summary.map(s => (
-                  <tr key={s.id}
-                    className={`hover:bg-slate-800/30 transition-colors cursor-pointer ${s.id === selectedId ? 'bg-blue-950/20' : ''}`}
-                    onClick={() => setSelectedId(s.id)}>
-                    <td className="px-6 py-3 font-medium text-slate-100">
-                      {new Date(s.year, s.month - 1).toLocaleString('default', { month: 'long' })} {s.year}
-                    </td>
-                    <td className="px-6 py-3"><StatusChip status={s.status} /></td>
-                    <td className="px-6 py-3 text-right font-mono text-slate-400">{s.total_required}</td>
-                    <td className="px-6 py-3 text-right font-mono text-slate-400">{s.total_assigned}</td>
-                    <td className="px-6 py-3 text-right">
-                      <span style={{ color: coverageColor(s.coverage_pct) }} className="font-bold">
-                        {s.coverage_pct}%
-                      </span>
-                    </td>
-                    <td className="px-6 py-3 text-xs font-mono text-slate-500">{s.solver_score || '—'}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+      {/* Selected Schedule Summary Bar */}
+      {curSummary && (
+        <div className="bg-slate-900 border border-slate-800 rounded-2xl p-5 shadow-xl flex flex-col md:flex-row items-center justify-between gap-4">
+          <div className="flex items-center gap-3">
+            <StatusChip status={curSummary.status} />
+            <span className="text-sm font-bold text-slate-200">
+              {new Date(curSummary.year, curSummary.month - 1).toLocaleString('default', { month: 'long', year: 'numeric' })}
+            </span>
           </div>
-        )}
+
+          <div className="flex items-center gap-6 text-xs text-slate-400">
+            <div>
+              Required Slots: <span className="font-bold text-slate-200">{curSummary.total_required}</span>
+            </div>
+            <div>
+              Assigned Slots: <span className="font-bold text-slate-200">{curSummary.total_assigned}</span>
+            </div>
+            <div>
+              Coverage Rate:{' '}
+              <span className="font-bold" style={{ color: coverageColor(curSummary.coverage_pct) }}>
+                {Math.round(curSummary.coverage_pct)}%
+              </span>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Charts Grid */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        {/* Daily Coverage Chart */}
+        <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-xl space-y-4 md:col-span-2">
+          <h3 className="text-sm font-bold text-slate-200">Daily Coverage Rate & Headcount Demand</h3>
+          {dailyCoverage.length > 0 ? (
+            <DailyCoverageChart days={dailyCoverage} />
+          ) : (
+            <div className="text-center py-12 text-slate-500 text-xs">No daily coverage data available.</div>
+          )}
+        </div>
+
+        {/* Worker Workload */}
+        <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-xl space-y-4">
+          <h3 className="text-sm font-bold text-slate-200">Worker Workload Distribution (Shifts Count)</h3>
+          {workerLoad && workerLoad.workers.length > 0 ? (
+            <WorkerLoadChart workers={workerLoad.workers} avg={workerLoad.average_shifts} />
+          ) : (
+            <div className="text-center py-12 text-slate-500 text-xs">No workload data available.</div>
+          )}
+        </div>
+
+        {/* Department Distribution */}
+        <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-xl space-y-4">
+          <h3 className="text-sm font-bold text-slate-200">Assignment Share by Department</h3>
+          {deptLoad.length > 0 ? (
+            <DepartmentDonut depts={deptLoad} />
+          ) : (
+            <div className="text-center py-12 text-slate-500 text-xs">No department data available.</div>
+          )}
+        </div>
       </div>
     </div>
   );

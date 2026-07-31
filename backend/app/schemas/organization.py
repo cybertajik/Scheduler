@@ -10,6 +10,15 @@ class OrganizationBase(BaseModel):
     description: Optional[str] = None
     require_employee_id: bool = True
     active: bool = True
+    country_code: Optional[str] = Field(None, max_length=5)
+    extra_country_code: Optional[str] = Field(None, max_length=5)
+    billing_cycle: str = "MONTHLY"
+    subscription_status: str = "ACTIVE"
+    grace_period_until: Optional[datetime] = None
+    contact_email: Optional[str] = None
+    contact_tel: Optional[str] = None
+    address: Optional[str] = None
+    admin_notes: Optional[str] = None
 
 class OrganizationCreate(OrganizationBase):
     top_manager_email: Optional[str] = None
@@ -21,6 +30,18 @@ class OrganizationUpdate(BaseModel):
     description: Optional[str] = None
     require_employee_id: Optional[bool] = None
     active: Optional[bool] = None
+    country_code: Optional[str] = Field(None, max_length=5)
+    extra_country_code: Optional[str] = Field(None, max_length=5)
+    billing_cycle: Optional[str] = None
+    subscription_status: Optional[str] = None
+    grace_period_until: Optional[datetime] = None
+    contact_email: Optional[str] = None
+    contact_tel: Optional[str] = None
+    address: Optional[str] = None
+    admin_notes: Optional[str] = None
+
+class OrganizationExtendGrace(BaseModel):
+    days: int = Field(14, ge=1, le=365)
 
 class OrganizationResponse(OrganizationBase):
     id: uuid.UUID

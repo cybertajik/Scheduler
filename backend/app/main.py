@@ -10,6 +10,7 @@ from app.core.database import engine, Base, SessionLocal
 from app.core.middleware import SecurityHeadersMiddleware, RequestLoggingMiddleware
 from app.api.v1.router import api_router
 from app.models import User, UserRole
+from app.models.organization import Organization
 from app.core.security import get_password_hash
 
 logging.basicConfig(
@@ -21,6 +22,11 @@ logger = logging.getLogger(__name__)
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     logger.info("Initializing database schema & auto-migrations...")
+
+    # Step 1: Create all base tables from SQLAlchemy models first
+    Base.metadata.create_all(bind=engine)
+
+    # Step 2: Add enum values (ignore errors if type doesn't exist yet)
     with engine.connect().execution_options(isolation_level="AUTOCOMMIT") as conn:
         for val in ["SUPER_ADMIN", "ORG_ADMIN"]:
             try:
@@ -28,6 +34,7 @@ async def lifespan(app: FastAPI):
             except Exception as e:
                 logger.warning(f"Enum update note: {e}")
 
+    # Step 3: Apply additive column migrations (safe with IF NOT EXISTS)
     with engine.connect() as conn:
         conn.execute(text("""
             CREATE TABLE IF NOT EXISTS organizations (
@@ -50,34 +57,128 @@ async def lifespan(app: FastAPI):
             ALTER TABLE workers ADD COLUMN IF NOT EXISTS contract_type VARCHAR(20) DEFAULT 'HOURLY' NOT NULL;
             ALTER TABLE workers ADD COLUMN IF NOT EXISTS hourly_rate FLOAT;
             ALTER TABLE workers ADD COLUMN IF NOT EXISTS monthly_salary FLOAT;
+            ALTER TABLE organizations ADD COLUMN IF NOT EXISTS country_code VARCHAR(5);
+            ALTER TABLE organizations ADD COLUMN IF NOT EXISTS extra_country_code VARCHAR(5);
+            ALTER TABLE organizations ADD COLUMN IF NOT EXISTS billing_cycle VARCHAR(20) DEFAULT 'MONTHLY' NOT NULL;
+            ALTER TABLE organizations ADD COLUMN IF NOT EXISTS subscription_status VARCHAR(20) DEFAULT 'ACTIVE' NOT NULL;
+            ALTER TABLE organizations ADD COLUMN IF NOT EXISTS grace_period_until TIMESTAMP WITH TIME ZONE;
+            ALTER TABLE organizations ADD COLUMN IF NOT EXISTS contact_email VARCHAR(255);
+            ALTER TABLE organizations ADD COLUMN IF NOT EXISTS contact_tel VARCHAR(50);
+            ALTER TABLE organizations ADD COLUMN IF NOT EXISTS address TEXT;
+            ALTER TABLE organizations ADD COLUMN IF NOT EXISTS admin_notes TEXT;
+
+            CREATE TABLE IF NOT EXISTS onboarding_applications (
+                id UUID PRIMARY KEY,
+                org_name VARCHAR(150) NOT NULL,
+                contact_name VARCHAR(100) NOT NULL,
+                contact_email VARCHAR(255) NOT NULL,
+                contact_tel VARCHAR(50) NOT NULL,
+                address TEXT,
+                requested_domain VARCHAR(255),
+                estimated_employees INTEGER DEFAULT 10 NOT NULL,
+                status VARCHAR(20) DEFAULT 'PENDING' NOT NULL,
+                rejection_reason TEXT,
+                created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+                updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+            );
         """))
         conn.commit()
 
-    Base.metadata.create_all(bind=engine)
     
-    # Seed default Admin user on first boot only
+    # Seed default accounts on first boot (idempotent — only creates if missing)
     db = SessionLocal()
     try:
-        admin = db.query(User).filter(User.role.in_([UserRole.SUPER_ADMIN, UserRole.ADMIN])).first()
-        if not admin:
-            logger.info("First boot: seeding default Admin user (admin@admin.com)...")
+        # ── Product Owner (Super Admin) ──
+        po_admin = db.query(User).filter(User.email == "admin@admin.com").first()
+        if not po_admin:
+            logger.info("First boot: seeding Product Owner (admin@admin.com)...")
             default_admin = User(
                 username="admin",
                 email="admin@admin.com",
                 password_hash=get_password_hash("!23QWEasd"),
-                first_name="System",
-                last_name="Administrator",
+                first_name="Product",
+                last_name="Owner",
                 role=UserRole.SUPER_ADMIN,
                 active=True
             )
             db.add(default_admin)
             db.commit()
-            logger.info("Default Admin user created.")
-        else:
-            admin.email = "admin@admin.com"
-            admin.password_hash = get_password_hash("!23QWEasd")
-            admin.active = True
+            logger.info("Default Product Owner created.")
+
+        # ── Test Organisation 1 + Manager ──
+        org1_mgr = db.query(User).filter(User.email == "testorg1@org.com").first()
+        if not org1_mgr:
+            logger.info("Seeding Test Organisation 1 + Manager (testorg1@org.com)...")
+            org1 = db.query(Organization).filter(Organization.slug == "test-org-1").first()
+            if not org1:
+                org1 = Organization(
+                    name="Test Organisation 1",
+                    slug="test-org-1",
+                    domain="org1.scheduler.local",
+                    description="Primary Logistics & Operations Organization",
+                    contact_email="testorg1@org.com",
+                    contact_tel="+1-555-0101",
+                    address="100 Innovation Way, Tech City",
+                    billing_cycle="MONTHLY",
+                    subscription_status="ACTIVE",
+                    require_employee_id=True,
+                    country_code="US",
+                    active=True,
+                )
+                db.add(org1)
+                db.flush()
+            org1_mgr = User(
+                organization_id=org1.id,
+                username="testorg1",
+                email="testorg1@org.com",
+                password_hash=get_password_hash("!23QWEasd"),
+                first_name="Alex",
+                last_name="Vance",
+                role=UserRole.ORG_ADMIN,
+                active=True
+            )
+            db.add(org1_mgr)
             db.commit()
+            logger.info("Test Organisation 1 + Manager created.")
+
+        # ── Test Organisation 2 + Manager ──
+        org2_mgr = db.query(User).filter(User.email == "testorg2@org.com").first()
+        if not org2_mgr:
+            logger.info("Seeding Test Organisation 2 + Manager (testorg2@org.com)...")
+            org2 = db.query(Organization).filter(Organization.slug == "test-org-2").first()
+            if not org2:
+                org2 = Organization(
+                    name="Test Organisation 2",
+                    slug="test-org-2",
+                    domain="org2.scheduler.local",
+                    description="Healthcare & Clinical Services",
+                    contact_email="testorg2@org.com",
+                    contact_tel="+1-555-0202",
+                    address="200 Health Center Blvd, Medical District",
+                    billing_cycle="ANNUAL",
+                    subscription_status="ACTIVE",
+                    require_employee_id=False,
+                    country_code="GB",
+                    active=True,
+                )
+                db.add(org2)
+                db.flush()
+            org2_mgr = User(
+                organization_id=org2.id,
+                username="testorg2",
+                email="testorg2@org.com",
+                password_hash=get_password_hash("!23QWEasd"),
+                first_name="Dr. Marcus",
+                last_name="Brody",
+                role=UserRole.ORG_ADMIN,
+                active=True
+            )
+            db.add(org2_mgr)
+            db.commit()
+            logger.info("Test Organisation 2 + Manager created.")
+    except Exception as e:
+        db.rollback()
+        logger.error(f"Seed error: {e}")
     finally:
         db.close()
 

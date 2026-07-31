@@ -91,7 +91,7 @@ export const WorkerDetailDrawer: React.FC<WorkerDetailDrawerProps> = ({
       <div className="p-4 bg-slate-950 border-b border-slate-800 flex items-center justify-between">
         <div className="flex items-center space-x-2">
           <Users className="w-5 h-5 text-blue-400" />
-          <h3 className="font-bold text-slate-100 text-sm">Worker Profile & Settings</h3>
+          <h3 className="font-bold text-slate-100 text-sm">Employee Profile & Settings</h3>
         </div>
         <button onClick={onClose} className="p-1 hover:bg-slate-800 rounded text-slate-400 hover:text-white">
           <X className="w-4 h-4" />
@@ -273,7 +273,7 @@ export const WorkerDetailDrawer: React.FC<WorkerDetailDrawerProps> = ({
               ))}
             </div>
           ) : (
-            <p className="text-[10px] text-slate-500 italic">No custom restrictions defined for this worker.</p>
+            <p className="text-[10px] text-slate-500 italic">No custom restrictions defined for this employee.</p>
           )}
         </div>
 

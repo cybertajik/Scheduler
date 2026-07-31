@@ -290,8 +290,62 @@ export const organizationService = {
     const response = await apiClient.patch('/organizations/current', data);
     return response.data;
   },
+  updateOrganizationById: async (orgId: string, data: any) => {
+    const response = await apiClient.patch(`/organizations/${orgId}`, data);
+    return response.data;
+  },
   updateUserPreferences: async (data: { preferred_language?: string; theme_preference?: string }) => {
     const response = await apiClient.patch('/auth/me/preferences', data);
+    return response.data;
+  },
+  extendGracePeriod: async (orgId: string, days: number = 14) => {
+    const response = await apiClient.post(`/organizations/${orgId}/extend-grace?days=${days}`);
+    return response.data;
+  },
+  suspendOrganization: async (orgId: string) => {
+    const response = await apiClient.post(`/organizations/${orgId}/suspend`);
+    return response.data;
+  },
+  activateOrganization: async (orgId: string) => {
+    const response = await apiClient.post(`/organizations/${orgId}/activate`);
+    return response.data;
+  },
+  deleteOrganization: async (orgId: string) => {
+    const response = await apiClient.delete(`/organizations/${orgId}`);
+    return response.data;
+  },
+};
+
+export const onboardingService = {
+  submitApplication: async (data: any) => {
+    const response = await apiClient.post('/onboarding/apply', data);
+    return response.data;
+  },
+  getApplications: async () => {
+    const response = await apiClient.get('/onboarding/applications');
+    return response.data;
+  },
+  approveApplication: async (id: string) => {
+    const response = await apiClient.post(`/onboarding/applications/${id}/approve`);
+    return response.data;
+  },
+  rejectApplication: async (id: string, reason?: string) => {
+    const response = await apiClient.post(`/onboarding/applications/${id}/reject`, { reason });
+    return response.data;
+  },
+};
+
+export const holidayService = {
+  getSupportedCountries: async (): Promise<{ code: string; name: string }[]> => {
+    const response = await apiClient.get('/holidays/countries');
+    return response.data;
+  },
+  getOrgHolidays: async (year: number): Promise<{ date: string; name: string; country: string }[]> => {
+    const response = await apiClient.get(`/holidays/org-holidays?year=${year}`);
+    return response.data;
+  },
+  getCountryDateFormat: async (countryCode: string): Promise<{ country_code: string; date_format: string }> => {
+    const response = await apiClient.get(`/holidays/date-format?country_code=${countryCode}`);
     return response.data;
   },
 };

@@ -43,7 +43,7 @@ export const ShiftContextMenu: React.FC<ShiftContextMenuProps> = ({
           className="w-full flex items-center space-x-2 px-3 py-2 text-slate-200 hover:bg-slate-800 rounded-lg text-left transition-colors"
         >
           <UserCheck className="w-3.5 h-3.5 text-sky-400" />
-          <span>Inspect Worker Details</span>
+          <span>Inspect Employee Details</span>
         </button>
 
         <div className="my-1 border-t border-slate-800" />

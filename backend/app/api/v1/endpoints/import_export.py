@@ -65,8 +65,10 @@ def export_workers(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ):
-    """Export worker roster as CSV."""
-    csv_data = ExportService.export_workers_csv(db)
+    """Export worker roster as CSV for the authenticated organization."""
+    from app.models.enums import UserRole
+    org_id = current_user.organization_id if current_user.role != UserRole.SUPER_ADMIN else None
+    csv_data = ExportService.export_workers_csv(db, org_id=org_id)
     return Response(
         content=csv_data,
         media_type="text/csv",

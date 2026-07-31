@@ -15,23 +15,28 @@ export const Sidebar: React.FC = () => {
   const { theme, toggleTheme } = useTheme();
   const { t, language, setLanguage, supportedLanguages } = useLanguage();
 
-  const isSuperAdmin = user?.role === 'SUPER_ADMIN' || user?.role === 'ADMIN';
-  const isOrgAdmin = user?.role === 'ORG_ADMIN' || isSuperAdmin;
+  const isSuperAdmin = user?.role === 'SUPER_ADMIN';
+  const isOrgAdmin = user?.role === 'ORG_ADMIN' || user?.role === 'ADMIN';
 
-  const navItems = [
-    { label: t('dashboard'), path: '/', icon: LayoutDashboard, show: true },
-    { label: t('analytics'), path: '/analytics', icon: BarChart2, show: true },
-    { label: t('schedules'), path: '/schedules', icon: Calendar, show: canManageSchedules || true },
-    { label: t('workers'), path: '/workers', icon: Users, show: canManageWorkers || true },
-    { label: t('shift_definitions'), path: '/shift-types', icon: Clock, show: canManageWorkers || true },
-    { label: t('rules_constraints'), path: '/rules', icon: ShieldAlert, show: canManageWorkers || true },
-    { label: t('audit_log'), path: '/audit-log', icon: FileText, show: true },
-    { label: t('import_export'), path: '/import-export', icon: FileSpreadsheet, show: canManageUsers },
-    { label: t('system_status'), path: '/system-status', icon: Activity, show: isSuperAdmin },
-    { label: t('user_accounts'), path: '/users', icon: UserCog, show: canManageUsers },
-    { label: t('organizations'), path: '/organizations', icon: Building2, show: isSuperAdmin },
-    { label: t('organization_settings'), path: '/organization-settings', icon: Sliders, show: isOrgAdmin },
-  ];
+  const navItems = isSuperAdmin
+    ? [
+        { label: t('organizations'), path: '/organizations', icon: Building2, show: true },
+        { label: t('analytics'), path: '/analytics', icon: BarChart2, show: true },
+        { label: t('system_status'), path: '/system-status', icon: Activity, show: true },
+        { label: t('audit_log'), path: '/audit-log', icon: FileText, show: true },
+      ]
+    : [
+        { label: t('dashboard'), path: '/', icon: LayoutDashboard, show: true },
+        { label: t('analytics'), path: '/analytics', icon: BarChart2, show: true },
+        { label: t('schedules'), path: '/schedules', icon: Calendar, show: canManageSchedules },
+        { label: t('workers'), path: '/workers', icon: Users, show: canManageWorkers },
+        { label: t('shift_definitions'), path: '/shift-types', icon: Clock, show: canManageWorkers },
+        { label: t('rules_constraints'), path: '/rules', icon: ShieldAlert, show: canManageWorkers },
+        { label: t('audit_log'), path: '/audit-log', icon: FileText, show: true },
+        { label: t('import_export'), path: '/import-export', icon: FileSpreadsheet, show: canManageUsers },
+        { label: t('user_accounts'), path: '/users', icon: UserCog, show: canManageUsers },
+        { label: t('organization_settings'), path: '/organization-settings', icon: Sliders, show: isOrgAdmin },
+      ];
 
   return (
     <aside className="w-64 bg-slate-900 border-r border-slate-800 flex flex-col justify-between min-h-screen select-none">

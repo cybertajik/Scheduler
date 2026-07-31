@@ -2,6 +2,7 @@ import React from 'react';
 import { Calendar, FileSpreadsheet, Printer, Download, UserPlus, Info, CheckCircle2, Palmtree, GraduationCap, Clock, X } from 'lucide-react';
 import { Schedule, Worker, ShiftInstance, Assignment } from '../../types';
 import { useLanguage } from '../../context/LanguageContext';
+import { useHolidays } from '../../context/HolidayContext';
 
 interface ExcelRosterViewProps {
   schedule: Schedule;
@@ -19,6 +20,7 @@ export const ExcelRosterView: React.FC<ExcelRosterViewProps> = ({
   onInspectWorker,
 }) => {
   const { t, language } = useLanguage();
+  const { getHolidaysForDate } = useHolidays();
 
   // Generate all days for the target month
   const totalDaysInMonth = new Date(schedule.year, schedule.month, 0).getDate();
@@ -155,11 +157,15 @@ export const ExcelRosterView: React.FC<ExcelRosterViewProps> = ({
                 {datesList.map((d) => {
                   const formattedDateLabel = `${d.dayName}, ${String(d.dayNum).padStart(2, '0')}.${String(schedule.month).padStart(2, '0')}.${String(schedule.year).slice(-2)}`;
 
+                  const holidayEvents = getHolidaysForDate(d.dateStr);
+                  const isHolidayRow = holidayEvents.length > 0;
                   return (
                     <tr
                       key={d.dateStr}
                       className={`transition-colors hover:bg-slate-800/50 ${
-                        d.isWeekend
+                        isHolidayRow
+                          ? 'bg-amber-950/30 print:bg-amber-50'
+                          : d.isWeekend
                           ? 'bg-emerald-950/20 text-emerald-200 font-medium print:bg-emerald-50 print:text-black'
                           : 'bg-slate-900/40 print:bg-white'
                       }`}
@@ -167,10 +173,21 @@ export const ExcelRosterView: React.FC<ExcelRosterViewProps> = ({
                       {/* Date Column */}
                       <td
                         className={`px-4 py-2.5 border-r border-slate-800/80 font-mono text-xs ${
-                          d.isWeekend ? 'font-bold text-emerald-400 print:text-emerald-700' : 'text-slate-300'
+                          isHolidayRow
+                            ? 'text-amber-400 font-bold'
+                            : d.isWeekend
+                            ? 'font-bold text-emerald-400 print:text-emerald-700'
+                            : 'text-slate-300'
                         }`}
+                        title={isHolidayRow ? holidayEvents.map(h => h.name).join(' | ') : undefined}
                       >
+                        {isHolidayRow && <span className="mr-1">🏖️</span>}
                         {formattedDateLabel}
+                        {isHolidayRow && (
+                          <div className="text-[10px] text-amber-300 font-sans font-normal mt-0.5 truncate max-w-[120px]">
+                            {holidayEvents[0].name}
+                          </div>
+                        )}
                       </td>
 
                       {/* Shift Columns */}
