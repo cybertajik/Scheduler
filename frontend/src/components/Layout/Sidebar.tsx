@@ -3,7 +3,7 @@ import { NavLink } from 'react-router-dom';
 import {
   LayoutDashboard, Users, Calendar, ShieldAlert, Clock,
   FileText, UserCog, LogOut, CalendarCheck, Activity, FileSpreadsheet, BarChart2,
-  Building2, Sliders, Sun, Moon, Globe, Boxes
+  Building2, Sliders, Sun, Moon, Globe, Boxes, UserCheck
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { useTheme } from '../../context/ThemeContext';
@@ -27,6 +27,7 @@ export const Sidebar: React.FC = () => {
       ]
     : [
         { label: t('dashboard'), path: '/', icon: LayoutDashboard, show: true },
+        { label: 'My Self-Service Portal', path: '/my-portal', icon: UserCheck, show: true },
         { label: t('analytics'), path: '/analytics', icon: BarChart2, show: true },
         { label: t('schedules'), path: '/schedules', icon: Calendar, show: canManageSchedules },
         { label: 'Scenario Sandbox', path: '/sandbox', icon: Boxes, show: canManageSchedules },

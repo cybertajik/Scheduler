@@ -5,7 +5,8 @@ import {
   Assignment, CoverageSummary, ConflictReport, AuditLog, Department,
   ComprehensiveDiagnostics, SandboxSchedule, ScheduleComparison, SandboxSimulationRequest, SandboxVersionItem,
   OperationalOverview, SystemHealth, EmployeeAnalyticsItem, DepartmentAnalyticsItem, HistoricalTrends, OperationalAlertItem,
-  ConflictDiagnosticItem, RepairPlanOut, RepairHistoryItem
+  ConflictDiagnosticItem, RepairPlanOut, RepairHistoryItem,
+  EmployeeDashboard, MyScheduleShift, VacationRequestItem, ShiftSwapItem, AvailabilityItem, EmployeeProfile
 } from '../types';
 
 export const authService = {
@@ -481,6 +482,56 @@ export const repairService = {
     const response = await apiClient.get(`/schedules/${scheduleId}/repair/history`);
     return response.data;
   },
+};
+
+export const employeePortalService = {
+  getDashboard: async (): Promise<EmployeeDashboard> => {
+    const response = await apiClient.get('/employee-portal/dashboard');
+    return response.data;
+  },
+  getMySchedule: async (): Promise<MyScheduleShift[]> => {
+    const response = await apiClient.get('/employee-portal/my-schedule');
+    return response.data;
+  },
+  submitVacation: async (data: { start_date: string; end_date: string; reason?: string }): Promise<VacationRequestItem> => {
+    const response = await apiClient.post('/employee-portal/vacations', data);
+    return response.data;
+  },
+  getVacations: async (): Promise<VacationRequestItem[]> => {
+    const response = await apiClient.get('/employee-portal/vacations');
+    return response.data;
+  },
+  submitShiftSwap: async (data: { target_worker_id: string; requestor_assignment_id: string; notes?: string }): Promise<ShiftSwapItem> => {
+    const response = await apiClient.post('/employee-portal/swaps', data);
+    return response.data;
+  },
+  getShiftSwaps: async (): Promise<ShiftSwapItem[]> => {
+    const response = await apiClient.get('/employee-portal/swaps');
+    return response.data;
+  },
+  submitAvailability: async (data: { date: string; availability_type: string; notes?: string }): Promise<AvailabilityItem> => {
+    const response = await apiClient.post('/employee-portal/availability', data);
+    return response.data;
+  },
+  getAvailability: async (): Promise<AvailabilityItem[]> => {
+    const response = await apiClient.get('/employee-portal/availability');
+    return response.data;
+  },
+  updateProfile: async (data: { phone?: string; email?: string; new_password?: string }): Promise<EmployeeProfile> => {
+    const response = await apiClient.patch('/employee-portal/profile', data);
+    return response.data;
+  },
+  downloadMySchedule: async () => {
+    const response = await apiClient.get('/employee-portal/download-document', { responseType: 'blob' });
+    const blob = new Blob([response.data]);
+    const url = window.URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.setAttribute('download', 'my_schedule_report.csv');
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+  }
 };
 
 

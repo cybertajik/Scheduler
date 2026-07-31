@@ -25,6 +25,7 @@ import { OrganizationsManagementPage } from './pages/OrganizationsManagementPage
 import { OrganizationSettingsPage } from './pages/OrganizationSettingsPage';
 import { OnboardingPage } from './pages/OnboardingPage';
 import { SandboxPage } from './pages/SandboxPage';
+import { EmployeePortalPage } from './pages/EmployeePortalPage';
 
 const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { isAuthenticated, user } = useAuth();
@@ -212,6 +213,14 @@ export function App() {
                 element={
                   <CommonProtectedRoute>
                     <AnalyticsDashboardPage />
+                  </CommonProtectedRoute>
+                }
+              />
+              <Route
+                path="/my-portal"
+                element={
+                  <CommonProtectedRoute>
+                    <EmployeePortalPage />
                   </CommonProtectedRoute>
                 }
               />

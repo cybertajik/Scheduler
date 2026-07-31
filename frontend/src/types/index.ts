@@ -566,3 +566,85 @@ export interface RepairHistoryItem {
   status: string;
   applied_at?: string;
 }
+
+export interface MyScheduleShift {
+  assignment_id: string;
+  shift_instance_id: string;
+  date: string;
+  shift_type_id: string;
+  shift_name: string;
+  color: string;
+  start_time: string;
+  end_time: string;
+  duration: number;
+  is_night_shift: boolean;
+  locked: boolean;
+  notes?: string;
+}
+
+export interface EmployeeDashboard {
+  worker_id: string;
+  worker_name: string;
+  employee_number: string;
+  department_name: string;
+  weekly_contract_hours: number;
+  worked_hours_this_month: number;
+  overtime_hours_this_month: number;
+  night_shifts_this_month: number;
+  weekend_shifts_this_month: number;
+  remaining_vacation_days: number;
+  upcoming_shifts: MyScheduleShift[];
+  recent_notifications: any[];
+}
+
+export interface VacationRequestItem {
+  id: string;
+  worker_id: string;
+  worker_name: string;
+  start_date: string;
+  end_date: string;
+  total_days: number;
+  reason?: string;
+  status: 'PENDING' | 'APPROVED' | 'REJECTED' | 'CANCELLED' | string;
+  admin_notes?: string;
+  created_at: string;
+}
+
+export interface ShiftSwapItem {
+  id: string;
+  requestor_worker_id: string;
+  requestor_worker_name: string;
+  target_worker_id: string;
+  target_worker_name: string;
+  requestor_assignment_id: string;
+  requestor_shift_date: string;
+  requestor_shift_name: string;
+  target_assignment_id?: string;
+  target_shift_date?: string;
+  target_shift_name?: string;
+  status: 'PROPOSED' | 'ACCEPTED' | 'DECLINED' | 'APPROVED' | 'REJECTED' | 'CANCELLED' | string;
+  notes?: string;
+  created_at: string;
+}
+
+export interface AvailabilityItem {
+  id: string;
+  worker_id: string;
+  date: string;
+  availability_type: 'UNAVAILABLE' | 'PREFERRED_OFF' | 'PREFERRED_SHIFT' | string;
+  shift_name?: string;
+  notes?: string;
+}
+
+export interface EmployeeProfile {
+  user_id: string;
+  worker_id: string;
+  first_name: string;
+  last_name: string;
+  employee_number: string;
+  email: string;
+  phone?: string;
+  department_name: string;
+  hire_date?: string;
+  weekly_contract_hours: number;
+}
