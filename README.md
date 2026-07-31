@@ -130,42 +130,16 @@ Staff Scheduler is an enterprise multi-tenant SaaS web application for managing 
 
 ## System Architecture
 
-```
-                       +---------------------------+
-                       |    Browser (React SPA)    |
-                       |  TypeScript + FullCalendar |
-                       +-----------+---------------+
-                                   |
-                            HTTPS / REST API
-                                   |
-                       +-----------v---------------+
-                       |     Nginx Reverse Proxy    |
-                       |         Port :80           |
-                       +-----------+---------------+
-                                   |
-                    +--------------+--------------+
-                    |                             |
-          /api/* proxy                    Static Assets
-                    |                     (HTML/CSS/JS)
-          +---------v-----------+
-          |   FastAPI Backend   |
-          |     Port :8000      |
-          +---------+-----------+
-                    |
-       +------------+------------+
-       |                         |
-+------v------+          +-------v-------+
-| PostgreSQL  |          |    Redis      |
-|  Port :5432 |          |  Port :6379   |
-+-------------+          +-------+-------+
-                                 |
-                    +------------+------------+
-                    |                         |
-             +------v------+          +------v------+
-             | Celery Worker|          | Celery Beat |
-             | (CP-SAT      |          | (Periodic   |
-             |  Solver)     |          |  Tasks)     |
-             +-------------+          +-------------+
+```mermaid
+graph TD
+    Client["React + TypeScript + FullCalendar Frontend"] -->|REST API / JWT| Nginx["Nginx Reverse Proxy (:80)"]
+    Nginx -->|Proxy /api/*| FastAPI["FastAPI Backend (:8000)"]
+    FastAPI -->|ORM Queries| Postgres[("PostgreSQL 16 DB (:5432)")]
+    FastAPI -->|Enqueue Jobs| Redis[("Redis Broker & Cache (:6379)")]
+    Redis -->|Dequeue Jobs| Celery["Celery Worker Container"]
+    Celery -->|Run Optimization| ORTools["Google OR-Tools CP-SAT Solver Engine"]
+    Celery -->|Save Solution| Postgres
+    Redis -->|Periodic Tasks| Beat["Celery Beat Scheduler"]
 ```
 
 ---
