@@ -297,3 +297,89 @@ def get_schedules_summary(
         })
 
     return {"schedules": result}
+
+# ── Operational Control Center Endpoints ──
+
+from fastapi.responses import Response, HTMLResponse
+from app.services.system_health_engine import SystemHealthEngine
+from app.services.operational_analytics_engine import OperationalAnalyticsEngine
+from app.services.operational_alert_engine import OperationalAlertEngine
+from app.services.analytics_export_engine import AnalyticsExportEngine
+from app.schemas.analytics_dashboard import (
+    OperationalOverviewOut,
+    SystemHealthOut,
+    EmployeeAnalyticsItem,
+    DepartmentAnalyticsItem,
+    HistoricalTrendsOut,
+    OperationalAlertItem
+)
+
+@router.get("/operational-dashboard", response_model=OperationalOverviewOut)
+def get_operational_dashboard_overview(
+    force_refresh: bool = False,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    return OperationalAnalyticsEngine.get_operational_overview(db, force_refresh=force_refresh)
+
+@router.get("/system-health", response_model=SystemHealthOut)
+def get_system_health_status(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    return SystemHealthEngine.get_system_health(db)
+
+@router.get("/employee-analytics", response_model=List[EmployeeAnalyticsItem])
+def get_employee_analytics_list(
+    department_id: Optional[str] = None,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    return OperationalAnalyticsEngine.get_employee_analytics(db, department_id=department_id)
+
+@router.get("/department-analytics", response_model=List[DepartmentAnalyticsItem])
+def get_department_analytics_list(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    return OperationalAnalyticsEngine.get_department_analytics(db)
+
+@router.get("/historical-trends", response_model=HistoricalTrendsOut)
+def get_historical_trends_data(
+    granularity: str = "MONTHLY",
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    return OperationalAnalyticsEngine.get_historical_trends(db, granularity=granularity)
+
+@router.get("/alerts", response_model=List[OperationalAlertItem])
+def get_operational_alerts_list(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    return OperationalAlertEngine.get_alerts(db)
+
+@router.get("/export")
+def export_analytics_report(
+    format: str = "CSV",
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    fmt = format.upper()
+    if fmt == "PDF":
+        html_report = AnalyticsExportEngine.export_pdf_report(db)
+        return HTMLResponse(content=html_report, status_code=200)
+    elif fmt == "EXCEL":
+        xlsx_bytes = AnalyticsExportEngine.export_excel(db)
+        return Response(
+            content=xlsx_bytes,
+            media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+            headers={"Content-Disposition": 'attachment; filename="workforce_analytics_report.xlsx"'}
+        )
+    else:
+        csv_str = AnalyticsExportEngine.export_csv(db)
+        return Response(
+            content=csv_str,
+            media_type="text/csv",
+            headers={"Content-Disposition": 'attachment; filename="workforce_analytics_report.csv"'}
+        )

@@ -402,3 +402,106 @@ export interface SandboxVersionItem {
   author_name?: string;
   created_at: string;
 }
+
+export interface StaffingWidget {
+  total_workers: number;
+  active_workers: number;
+  scheduled_workers_today: number;
+  required_workers_today: number;
+  open_shifts_today: number;
+  unfilled_shifts_today: number;
+  coverage_percentage_today: number;
+}
+
+export interface OperationalOverview {
+  staffing_status: StaffingWidget;
+  current_coverage_percentage: number;
+  total_schedules: number;
+  published_schedules: number;
+  draft_schedules: number;
+  pending_approvals: number;
+  pending_imports: number;
+  pending_exports: number;
+  active_users_count: number;
+  recent_solver_runs: any[];
+  recent_audit_events: any[];
+}
+
+export interface EmployeeAnalyticsItem {
+  worker_id: string;
+  employee_number: string;
+  worker_name: string;
+  department_name: string;
+  assigned_shifts_count: number;
+  total_worked_hours: number;
+  night_shifts_count: number;
+  weekend_shifts_count: number;
+  vacation_days_count: number;
+  overtime_hours: number;
+  fairness_score: number;
+  rule_conflicts_count: number;
+  skill_utilization_pct: number;
+  availability_status: string;
+}
+
+export interface DepartmentAnalyticsItem {
+  department_id: string;
+  department_name: string;
+  active_staff_count: number;
+  coverage_percentage: number;
+  total_assigned_shifts: number;
+  open_positions_count: number;
+  skill_shortages_count: number;
+  total_overtime_hours: number;
+  night_shift_balance_score: number;
+  vacation_impact_score: number;
+}
+
+export interface TrendPoint {
+  period_label: string;
+  coverage_pct: number;
+  overtime_hours: number;
+  night_shifts_count: number;
+  weekend_shifts_count: number;
+  solver_runtime_seconds: number;
+  fairness_score: number;
+  rule_violations_count: number;
+  staff_utilization_pct: number;
+}
+
+export interface HistoricalTrends {
+  granularity: string;
+  trends: TrendPoint[];
+}
+
+export interface ServiceHealthItem {
+  name: string;
+  status: 'HEALTHY' | 'DEGRADED' | 'DOWN' | 'UNKNOWN' | string;
+  response_time_ms: number;
+  details?: string;
+}
+
+export interface SystemHealth {
+  overall_status: 'HEALTHY' | 'WARNING' | 'CRITICAL' | string;
+  database: ServiceHealthItem;
+  redis_cache: ServiceHealthItem;
+  celery_queue: ServiceHealthItem;
+  api_gateway: ServiceHealthItem;
+  cpu_usage_pct: number;
+  memory_usage_pct: number;
+  disk_usage_pct: number;
+  container_status: string;
+  backup_status: string;
+  last_successful_backup_at?: string;
+  queue_depth: number;
+}
+
+export interface OperationalAlertItem {
+  id: string;
+  severity: 'CRITICAL' | 'WARNING' | 'INFO' | string;
+  category: string;
+  title: string;
+  message: string;
+  timestamp: string;
+  suggested_action?: string;
+}

@@ -3,7 +3,8 @@ import {
   User, Worker, WorkerCreate, ShiftType, ShiftTypeCreate,
   WorkerConstraint, ConstraintCreate, Schedule, ShiftInstance,
   Assignment, CoverageSummary, ConflictReport, AuditLog, Department,
-  ComprehensiveDiagnostics, SandboxSchedule, ScheduleComparison, SandboxSimulationRequest, SandboxVersionItem
+  ComprehensiveDiagnostics, SandboxSchedule, ScheduleComparison, SandboxSimulationRequest, SandboxVersionItem,
+  OperationalOverview, SystemHealth, EmployeeAnalyticsItem, DepartmentAnalyticsItem, HistoricalTrends, OperationalAlertItem
 } from '../types';
 
 export const authService = {
@@ -288,6 +289,42 @@ export const analyticsService = {
     const response = await apiClient.get(`/analytics/${scheduleId}/shift-distribution`);
     return response.data;
   },
+  getOperationalDashboard: async (forceRefresh: boolean = false): Promise<OperationalOverview> => {
+    const response = await apiClient.get(`/analytics/operational-dashboard?force_refresh=${forceRefresh}`);
+    return response.data;
+  },
+  getSystemHealth: async (): Promise<SystemHealth> => {
+    const response = await apiClient.get('/analytics/system-health');
+    return response.data;
+  },
+  getEmployeeAnalytics: async (departmentId?: string): Promise<EmployeeAnalyticsItem[]> => {
+    const url = departmentId ? `/analytics/employee-analytics?department_id=${departmentId}` : '/analytics/employee-analytics';
+    const response = await apiClient.get(url);
+    return response.data;
+  },
+  getDepartmentAnalytics: async (): Promise<DepartmentAnalyticsItem[]> => {
+    const response = await apiClient.get('/analytics/department-analytics');
+    return response.data;
+  },
+  getHistoricalTrends: async (granularity: string = 'MONTHLY'): Promise<HistoricalTrends> => {
+    const response = await apiClient.get(`/analytics/historical-trends?granularity=${granularity}`);
+    return response.data;
+  },
+  getAlerts: async (): Promise<OperationalAlertItem[]> => {
+    const response = await apiClient.get('/analytics/alerts');
+    return response.data;
+  },
+  downloadReport: async (format: string = 'CSV') => {
+    const response = await apiClient.get(`/analytics/export?format=${format}`, { responseType: 'blob' });
+    const blob = new Blob([response.data]);
+    const url = window.URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.setAttribute('download', `workforce_analytics_report.${format.toLowerCase()}`);
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+  }
 };
 
 export const organizationService = {
