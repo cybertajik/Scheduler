@@ -19,9 +19,16 @@ class Settings(BaseSettings):
         explicit = os.getenv("DATABASE_URL", "")
         if explicit:
             return explicit
+        server = self.POSTGRES_SERVER
+        if server == "postgres":
+            import socket
+            try:
+                socket.gethostbyname("postgres")
+            except socket.gaierror:
+                server = "localhost"
         return (
             f"postgresql://{self.POSTGRES_USER}:{self.POSTGRES_PASSWORD}"
-            f"@{self.POSTGRES_SERVER}:{self.POSTGRES_PORT}/{self.POSTGRES_DB}"
+            f"@{server}:{self.POSTGRES_PORT}/{self.POSTGRES_DB}"
         )
 
     # Redis & Celery
