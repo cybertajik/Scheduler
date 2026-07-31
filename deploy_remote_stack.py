@@ -78,7 +78,7 @@ try:
 
     # 1. Clean old containers and directory
     print("\n--- STEP 1: Cleaning Old Remote Directory & Images ---")
-    run_cmd(client, f"cd {remote_app_dir} && sudo docker compose down -v || true")
+    run_cmd(client, f"cd {remote_app_dir} && sudo docker compose down --remove-orphans || true")
     run_cmd(client, f"rm -rf {remote_app_dir}/*")
 
     # 2. Upload fresh monorepo scaffold

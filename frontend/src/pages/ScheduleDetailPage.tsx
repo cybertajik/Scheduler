@@ -18,9 +18,11 @@ import { WorkerDetailDrawer } from '../components/ScheduleEditor/WorkerDetailDra
 import { ShiftContextMenu } from '../components/ScheduleEditor/ShiftContextMenu';
 
 import { useLanguage } from '../context/LanguageContext';
+import { useHolidays } from '../context/HolidayContext';
 
 export const ScheduleDetailPage: React.FC = () => {
   const { t } = useLanguage();
+  const { getHolidaysForDate, holidays } = useHolidays();
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const calendarRef = useRef<any>(null);
@@ -343,6 +345,20 @@ export const ScheduleDetailPage: React.FC = () => {
         },
       });
     }
+  });
+
+  // Inject public holiday background events from HolidayContext
+  holidays.forEach((h) => {
+    events.push({
+      id: `holiday-${h.date}-${h.country}`,
+      title: `🏖️ ${h.name}`,
+      date: h.date,
+      display: 'background',
+      backgroundColor: 'rgba(245, 158, 11, 0.15)',
+      borderColor: 'rgba(245, 158, 11, 0.4)',
+      classNames: ['holiday-bg-event'],
+      extendedProps: { isHoliday: true, holidayName: h.name, country: h.country },
+    });
   });
 
   return (

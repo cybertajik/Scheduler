@@ -36,7 +36,7 @@ export const WorkerDetailPage: React.FC = () => {
       setWorker(w);
       setRules(r);
     } catch (err: any) {
-      setError(err.response?.data?.detail || 'Failed to load worker details');
+      setError(err.response?.data?.detail || 'Failed to load employee details');
     } finally {
       setLoading(false);
     }
@@ -58,8 +58,8 @@ export const WorkerDetailPage: React.FC = () => {
     }
   };
 
-  if (loading) return <LoadingSpinner label="Loading worker profile..." />;
-  if (!worker) return <ErrorBanner message="Worker not found" />;
+  if (loading) return <LoadingSpinner label="Loading employee profile..." />;
+  if (!worker) return <ErrorBanner message="Employee not found" />;
 
   return (
     <div className="space-y-6">
@@ -68,7 +68,7 @@ export const WorkerDetailPage: React.FC = () => {
         className="flex items-center space-x-2 text-xs font-semibold text-slate-400 hover:text-slate-200 transition-colors"
       >
         <ArrowLeft className="w-4 h-4" />
-        <span>Back to Workers Directory</span>
+        <span>Back to Employees Directory</span>
       </button>
 
       <ErrorBanner message={error} onDismiss={() => setError('')} />
@@ -118,7 +118,7 @@ export const WorkerDetailPage: React.FC = () => {
 
         {rules.length === 0 ? (
           <div className="p-8 text-center text-slate-500 text-sm">
-            No specific unavailability rules registered for this worker.
+            No specific unavailability rules registered for this employee.
           </div>
         ) : (
           <div className="divide-y divide-slate-800">
@@ -144,7 +144,7 @@ export const WorkerDetailPage: React.FC = () => {
       </div>
 
       {/* Add Rule Modal */}
-      <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} title="Add Worker Rule / Vacation">
+      <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} title="Add Employee Rule / Vacation">
         <form onSubmit={handleAddRule} className="space-y-4">
           <div>
             <label className="block text-xs font-semibold text-slate-300 mb-1">Constraint Type</label>

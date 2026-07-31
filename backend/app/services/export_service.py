@@ -159,15 +159,18 @@ class ExportService:
         return output.getvalue()
 
     @staticmethod
-    def export_workers_csv(db: Session) -> str:
-        """Export worker roster to CSV using correct model field names."""
+    def export_workers_csv(db: Session, org_id: Any = None) -> str:
+        """Export worker roster to CSV with organization filtering."""
         output = io.StringIO()
         writer = csv.writer(output)
         writer.writerow([
             "Employee Number", "First Name", "Last Name", "Email",
             "Department", "Active", "Contract Hours/Week"
         ])
-        workers = db.query(Worker).order_by(Worker.employee_number).all()
+        query = db.query(Worker)
+        if org_id:
+            query = query.filter(Worker.organization_id == org_id)
+        workers = query.order_by(Worker.employee_number).all()
         for w in workers:
             writer.writerow([
                 w.employee_number,

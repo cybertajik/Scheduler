@@ -77,3 +77,41 @@ def update_organization_by_id(
 ):
     """Update organization by ID (Super Admin only)."""
     return OrganizationService.update_organization(db, org_id, org_in, updater=current_user)
+
+@router.post("/{org_id}/extend-grace", response_model=OrganizationResponse)
+def extend_grace_period(
+    org_id: uuid.UUID,
+    days: int = 14,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_super_admin)
+):
+    """Extend organization subscription grace period (Super Admin only)."""
+    return OrganizationService.extend_grace_period(db, org_id, days)
+
+@router.post("/{org_id}/suspend", response_model=OrganizationResponse)
+def suspend_organization(
+    org_id: uuid.UUID,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_super_admin)
+):
+    """Suspend an organization subscription (Super Admin only)."""
+    return OrganizationService.set_subscription_status(db, org_id, status="SUSPENDED", active=False)
+
+@router.post("/{org_id}/activate", response_model=OrganizationResponse)
+def activate_organization(
+    org_id: uuid.UUID,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_super_admin)
+):
+    """Activate an organization subscription (Super Admin only)."""
+    return OrganizationService.set_subscription_status(db, org_id, status="ACTIVE", active=True)
+
+@router.delete("/{org_id}", status_code=204)
+def delete_organization(
+    org_id: uuid.UUID,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_super_admin)
+):
+    """Delete an organization (Super Admin only)."""
+    OrganizationService.delete_organization(db, org_id)
+    return None

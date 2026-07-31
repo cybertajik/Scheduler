@@ -53,7 +53,7 @@ export const Navbar: React.FC = () => {
                 }`}
               >
                 <Users className="w-4 h-4" />
-                <span>Workers</span>
+                <span>Employees</span>
               </Link>
 
               <Link

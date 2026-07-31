@@ -7,6 +7,7 @@ from app.models.shift import ShiftType, ShiftInstance
 from app.models.constraint import WorkerConstraint
 from app.models.schedule import Schedule, Assignment
 from app.models.audit_log import AuditLog
+from app.models.onboarding import OnboardingApplication
 
 __all__ = [
     "UserRole",
@@ -25,5 +26,6 @@ __all__ = [
     "WorkerConstraint",
     "Schedule",
     "Assignment",
-    "AuditLog"
+    "AuditLog",
+    "OnboardingApplication"
 ]

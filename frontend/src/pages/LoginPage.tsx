@@ -115,20 +115,41 @@ export const LoginPage: React.FC = () => {
         </form>
 
         {/* Quick Demo Sign In Section */}
-        <div className="mt-8 pt-6 border-t border-slate-800">
-          <p className="text-xs text-slate-500 text-center font-medium mb-3">Quick Demo Sign-In</p>
-          <div className="grid grid-cols-2 gap-2">
+        <div className="mt-6 pt-6 border-t border-slate-800 space-y-4">
+          <div>
+            <p className="text-xs text-slate-500 text-center font-medium mb-2">Quick Sign-In Credentials</p>
+            <div className="grid grid-cols-3 gap-2">
+              <button
+                type="button"
+                onClick={() => handleDemoLogin('admin@admin.com', '!23QWEasd')}
+                className="px-2 py-2 bg-slate-950 hover:bg-slate-800 border border-slate-800 rounded-lg text-xs text-blue-400 font-semibold transition-colors text-center"
+              >
+                Product Owner
+              </button>
+              <button
+                type="button"
+                onClick={() => handleDemoLogin('testorg1@org.com', '!23QWEasd')}
+                className="px-2 py-2 bg-slate-950 hover:bg-slate-800 border border-slate-800 rounded-lg text-xs text-amber-400 font-semibold transition-colors text-center"
+              >
+                Test Org 1
+              </button>
+              <button
+                type="button"
+                onClick={() => handleDemoLogin('testorg2@org.com', '!23QWEasd')}
+                className="px-2 py-2 bg-slate-950 hover:bg-slate-800 border border-slate-800 rounded-lg text-xs text-emerald-400 font-semibold transition-colors text-center"
+              >
+                Test Org 2
+              </button>
+            </div>
+          </div>
+
+          <div className="text-center pt-2">
             <button
-              onClick={() => handleDemoLogin('admin@admin.com', '!23QWEasd')}
-              className="px-3 py-2 bg-slate-950 hover:bg-slate-800 border border-slate-800 rounded-lg text-xs text-slate-300 transition-colors font-medium text-center"
+              type="button"
+              onClick={() => navigate('/onboarding')}
+              className="text-xs text-slate-400 hover:text-blue-400 transition-colors inline-flex items-center gap-1 font-medium"
             >
-              Admin Demo
-            </button>
-            <button
-              onClick={() => handleDemoLogin('manager@admin.com', '!23QWEasd')}
-              className="px-3 py-2 bg-slate-950 hover:bg-slate-800 border border-slate-800 rounded-lg text-xs text-slate-300 transition-colors font-medium text-center"
-            >
-              Manager Demo
+              Want to register a new organization? <span className="underline font-semibold text-blue-400">Apply for SaaS Onboarding →</span>
             </button>
           </div>
         </div>

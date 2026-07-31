@@ -183,3 +183,39 @@ export interface AuditLog {
   ip_address?: string;
   created_at: string;
 }
+
+export interface Organization {
+  id: string;
+  name: string;
+  slug: string;
+  domain?: string;
+  description?: string;
+  require_employee_id: boolean;
+  active: boolean;
+  country_code?: string;
+  extra_country_code?: string;
+  billing_cycle?: 'MONTHLY' | 'ANNUAL' | string;
+  subscription_status?: 'ACTIVE' | 'SUSPENDED' | 'GRACE_PERIOD' | string;
+  grace_period_until?: string;
+  contact_email?: string;
+  contact_tel?: string;
+  address?: string;
+  admin_notes?: string;
+  created_at?: string;
+  updated_at?: string;
+}
+
+export interface OnboardingApplication {
+  id: string;
+  org_name: string;
+  contact_name: string;
+  contact_email: string;
+  contact_tel: string;
+  address?: string;
+  requested_domain?: string;
+  estimated_employees: number;
+  status: 'PENDING' | 'APPROVED' | 'REJECTED';
+  rejection_reason?: string;
+  created_at: string;
+  updated_at: string;
+}

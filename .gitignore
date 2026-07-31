@@ -30,3 +30,9 @@ Thumbs.db
 .env
 *.log
 inspection_output.json
+scratch_*.py
+check_*.py
+debug_*.py
+fast_fix_*.py
+hotfix_*.py
+

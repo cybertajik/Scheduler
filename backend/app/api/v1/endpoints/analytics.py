@@ -35,9 +35,16 @@ def get_analytics_overview(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    """Return top-level workforce KPIs across all schedules in the system."""
-    total_workers = db.query(func.count(Worker.id)).filter(Worker.active == True).scalar() or 0
-    total_schedules = db.query(func.count(Schedule.id)).scalar() or 0
+    """Return top-level workforce KPIs across all schedules for the organization."""
+    from app.models.enums import UserRole
+    worker_query = db.query(func.count(Worker.id)).filter(Worker.active == True)
+    schedule_query = db.query(func.count(Schedule.id))
+
+    if current_user.role != UserRole.SUPER_ADMIN and current_user.organization_id:
+        worker_query = worker_query.filter(Worker.organization_id == current_user.organization_id)
+
+    total_workers = worker_query.scalar() or 0
+    total_schedules = schedule_query.scalar() or 0
     published_schedules = db.query(func.count(Schedule.id)).filter(
         Schedule.status == ScheduleStatus.PUBLISHED
     ).scalar() or 0

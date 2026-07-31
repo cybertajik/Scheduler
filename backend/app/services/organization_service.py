@@ -90,3 +90,29 @@ class OrganizationService:
             user_id=updater.id, who=updater.full_name, new_value=update_data
         )
         return org
+
+    @staticmethod
+    def extend_grace_period(db: Session, org_id: uuid.UUID, days: int = 14) -> Organization:
+        from datetime import datetime, timedelta, timezone
+        org = OrganizationService.get_organization_by_id(db, org_id)
+        current = org.grace_period_until or datetime.now(timezone.utc)
+        org.grace_period_until = current + timedelta(days=days)
+        org.subscription_status = "GRACE_PERIOD"
+        db.commit()
+        db.refresh(org)
+        return org
+
+    @staticmethod
+    def set_subscription_status(db: Session, org_id: uuid.UUID, status: str, active: bool) -> Organization:
+        org = OrganizationService.get_organization_by_id(db, org_id)
+        org.subscription_status = status
+        org.active = active
+        db.commit()
+        db.refresh(org)
+        return org
+
+    @staticmethod
+    def delete_organization(db: Session, org_id: uuid.UUID) -> None:
+        org = OrganizationService.get_organization_by_id(db, org_id)
+        db.delete(org)
+        db.commit()
