@@ -5,10 +5,11 @@ from app.rules.enums import RuleCategory, RuleType, ConflictSeverity
 
 class WorkerDTO(BaseModel):
     id: str
-    employee_number: str
+    employee_number: Optional[str] = "EMP001"
     first_name: str
     last_name: str
-    department_id: str
+    department_id: Optional[str] = "dept1"
+    name: Optional[str] = None
     skill_ids: Set[str] = Field(default_factory=set)
     weekly_contract_hours: float = 40.0
     active: bool = True
@@ -16,10 +17,11 @@ class WorkerDTO(BaseModel):
 class ShiftTypeDTO(BaseModel):
     id: str
     name: str
+    code: Optional[str] = "SHF"
     color: str = "#3B82F6"
-    start_time: time
-    end_time: time
-    duration: float
+    start_time: Optional[time] = None
+    end_time: Optional[time] = None
+    duration: float = 8.0
     is_night_shift: bool = False
     requires_rest_day: bool = False
 
