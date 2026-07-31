@@ -16,6 +16,7 @@ import { ConflictSidePanel } from '../components/ScheduleEditor/ConflictSidePane
 import { ExcelRosterView } from '../components/ScheduleEditor/ExcelRosterView';
 import { WorkerDetailDrawer } from '../components/ScheduleEditor/WorkerDetailDrawer';
 import { ShiftContextMenu } from '../components/ScheduleEditor/ShiftContextMenu';
+import { DiagnosticsPanel } from '../components/ScheduleEditor/DiagnosticsPanel';
 
 import { useLanguage } from '../context/LanguageContext';
 import { useHolidays } from '../context/HolidayContext';
@@ -51,6 +52,7 @@ export const ScheduleDetailPage: React.FC = () => {
   // Side Panels & Drawers
   const [isConflictPanelOpen, setIsConflictPanelOpen] = useState(false);
   const [isWorkerDrawerOpen, setIsWorkerDrawerOpen] = useState(false);
+  const [isDiagnosticsPanelOpen, setIsDiagnosticsPanelOpen] = useState(false);
   const [selectedWorker, setSelectedWorker] = useState<Worker | null>(null);
 
   // Assignment Modal
@@ -380,12 +382,18 @@ export const ScheduleDetailPage: React.FC = () => {
         onPublish={handlePublishSchedule}
         onToggleConflictPanel={() => setIsConflictPanelOpen((prev) => !prev)}
         onToggleWorkerDrawer={() => setIsWorkerDrawerOpen((prev) => !prev)}
+        onToggleDiagnosticsPanel={() => setIsDiagnosticsPanelOpen((prev) => !prev)}
         isSolving={solving}
         conflictCount={conflicts?.hard_conflicts_count || 0}
       />
 
       <ErrorBanner message={error} onDismiss={() => setError('')} />
       {toast && <NotificationToast type={toast.type} message={toast.message} onDismiss={() => setToast(null)} />}
+
+      {/* Solver Diagnostics Panel */}
+      {isDiagnosticsPanelOpen && id && (
+        <DiagnosticsPanel scheduleId={id} onClose={() => setIsDiagnosticsPanelOpen(false)} />
+      )}
 
       {/* Coverage & Diagnostics Card */}
       {coverage && (

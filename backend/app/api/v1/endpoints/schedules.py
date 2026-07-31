@@ -186,3 +186,25 @@ def get_schedule_audit_logs(
     current_user: User = Depends(get_current_user)
 ):
     return AuditService.get_logs_by_entity(db, entity_type="Schedule", entity_id=str(schedule_id))
+
+@router.get("/{schedule_id}/diagnostics")
+def get_schedule_diagnostics(
+    schedule_id: uuid.UUID,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    return SolverOrchestrationService.get_schedule_diagnostics(db, schedule_id)
+
+@router.get("/{schedule_id}/diagnostics/export")
+def export_schedule_diagnostics(
+    schedule_id: uuid.UUID,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    from fastapi.responses import Response
+    content = SolverOrchestrationService.export_schedule_diagnostics(db, schedule_id)
+    return Response(
+        content=content,
+        media_type="application/json",
+        headers={"Content-Disposition": f"attachment; filename=solver_diagnostics_{schedule_id}.json"}
+    )

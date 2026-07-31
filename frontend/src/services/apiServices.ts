@@ -2,7 +2,8 @@ import { apiClient } from '../api/client';
 import {
   User, Worker, WorkerCreate, ShiftType, ShiftTypeCreate,
   WorkerConstraint, ConstraintCreate, Schedule, ShiftInstance,
-  Assignment, CoverageSummary, ConflictReport, AuditLog, Department
+  Assignment, CoverageSummary, ConflictReport, AuditLog, Department,
+  ComprehensiveDiagnostics
 } from '../types';
 
 export const authService = {
@@ -162,6 +163,22 @@ export const scheduleService = {
   getSolverStatus: async (scheduleId: string) => {
     const response = await apiClient.get(`/schedules/${scheduleId}/solver-status`);
     return response.data;
+  },
+  getScheduleDiagnostics: async (scheduleId: string): Promise<ComprehensiveDiagnostics> => {
+    const response = await apiClient.get(`/schedules/${scheduleId}/diagnostics`);
+    return response.data;
+  },
+  downloadDiagnosticsExport: async (scheduleId: string) => {
+    const response = await apiClient.get(`/schedules/${scheduleId}/diagnostics/export`, {
+      responseType: 'blob'
+    });
+    const url = window.URL.createObjectURL(new Blob([response.data]));
+    const link = document.createElement('a');
+    link.href = url;
+    link.setAttribute('download', `solver_diagnostics_${scheduleId}.json`);
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
   },
   getCoverage: async (scheduleId: string): Promise<CoverageSummary> => {
     const response = await apiClient.get(`/schedules/${scheduleId}/coverage`);

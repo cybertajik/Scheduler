@@ -29,7 +29,7 @@ class ResultTranslator:
 
         if not is_solved:
             diagnostics = InfeasibilityExplainer.diagnose(input_data)
-            return SolverResultDTO(
+            res = SolverResultDTO(
                 schedule_id=input_data.schedule_id,
                 status=status_name,
                 is_solved=False,
@@ -45,6 +45,13 @@ class ResultTranslator:
                 diagnostics=diagnostics,
                 solver_metadata={"cp_sat_status": status_name, "num_conflicts": solver.NumConflicts()}
             )
+            from app.solver.diagnostics.decision_diagnostics_engine import DecisionDiagnosticsEngine
+            res.comprehensive_diagnostics = DecisionDiagnosticsEngine.evaluate(
+                input_data=input_data,
+                result=res,
+                solver_obj=solver
+            ).model_dump()
+            return res
 
         # Process Assigned Shifts
         assignments: List[SolverAssignmentDTO] = []
@@ -98,7 +105,7 @@ class ResultTranslator:
         total_assigned = len(assignments)
         is_partial = (total_unfilled > 0)
 
-        return SolverResultDTO(
+        res = SolverResultDTO(
             schedule_id=input_data.schedule_id,
             status=status_name,
             is_solved=True,
@@ -121,3 +128,12 @@ class ResultTranslator:
                 "num_conflicts": solver.NumConflicts()
             }
         )
+
+        from app.solver.diagnostics.decision_diagnostics_engine import DecisionDiagnosticsEngine
+        res.comprehensive_diagnostics = DecisionDiagnosticsEngine.evaluate(
+            input_data=input_data,
+            result=res,
+            solver_obj=solver
+        ).model_dump()
+
+        return res

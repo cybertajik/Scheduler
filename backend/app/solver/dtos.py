@@ -78,4 +78,5 @@ class SolverResultDTO(BaseModel):
     assignments: List[SolverAssignmentDTO] = Field(default_factory=list)
     unfilled_shifts: List[UnfilledShiftDTO] = Field(default_factory=list)
     diagnostics: Optional[InfeasibilityDiagnosticDTO] = None
+    comprehensive_diagnostics: Optional[Any] = None
     solver_metadata: Dict[str, Any] = Field(default_factory=dict)

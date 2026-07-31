@@ -219,3 +219,109 @@ export interface OnboardingApplication {
   created_at: string;
   updated_at: string;
 }
+
+export interface SolverStatistics {
+  variables_created: number;
+  constraints_created: number;
+  solver_runtime_seconds: number;
+  memory_estimate_mb: number;
+  objective_score: number;
+  branches_explored: number;
+  conflicts_detected: number;
+  solver_status: string;
+}
+
+export interface WorkloadDistribution {
+  employee_id: string;
+  employee_name: string;
+  count: number;
+  target?: number;
+  deviation?: number;
+}
+
+export interface SoftConstraintViolation {
+  rule_id: string;
+  rule_name: string;
+  rule_category: string;
+  penalty_score: number;
+  employees_affected: string[];
+  dates_affected: string[];
+  description: string;
+}
+
+export interface OvertimeSummary {
+  total_overtime_hours: number;
+  employees_with_overtime_count: number;
+  max_overtime_hours_employee: number;
+  affected_employee_names: string[];
+}
+
+export interface SkillCoverage {
+  skill_tag: string;
+  required_shifts: number;
+  assigned_shifts: number;
+  unmet_shifts: number;
+  coverage_percentage: number;
+}
+
+export interface SuccessfulDiagnostics {
+  coverage_percentage: number;
+  fairness_score: number;
+  total_assigned_shifts: number;
+  unassigned_shifts: number;
+  soft_constraint_violations: SoftConstraintViolation[];
+  overtime_summary: OvertimeSummary;
+  weekend_distribution: WorkloadDistribution[];
+  night_shift_distribution: WorkloadDistribution[];
+  skill_coverage_summary: SkillCoverage[];
+}
+
+export interface SeverityReason {
+  severity: 'CRITICAL' | 'HIGH' | 'MEDIUM' | 'LOW' | string;
+  category: string;
+  reason: string;
+  affected_employees: string[];
+  affected_dates: string[];
+  suggested_action: string;
+}
+
+export interface FailedDiagnostics {
+  is_infeasible: boolean;
+  summary: string;
+  ranked_reasons: SeverityReason[];
+  affected_employees: string[];
+  affected_dates: string[];
+  suggested_remediations: string[];
+}
+
+export interface ConstraintDiagnostic {
+  constraint_name: string;
+  constraint_type: 'HARD' | 'SOFT' | string;
+  category: string;
+  employees_affected: string[];
+  dates_affected: string[];
+  number_of_conflicts: number;
+  suggested_corrective_actions: string[];
+}
+
+export interface SuggestedFix {
+  id: string;
+  title: string;
+  description: string;
+  action_type: string;
+  employee_id?: string;
+  employee_name?: string;
+  date?: string;
+  impact_score: number;
+}
+
+export interface ComprehensiveDiagnostics {
+  schedule_id: string;
+  status: string;
+  timestamp: string;
+  solver_statistics: SolverStatistics;
+  successful_diagnostics?: SuccessfulDiagnostics;
+  failed_diagnostics?: FailedDiagnostics;
+  constraint_diagnostics: ConstraintDiagnostic[];
+  suggested_fixes: SuggestedFix[];
+}

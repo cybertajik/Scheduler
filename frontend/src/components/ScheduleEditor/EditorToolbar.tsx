@@ -1,6 +1,6 @@
 import React from 'react';
 import {
-  ArrowLeft, Cpu, ShieldAlert, CheckCircle2, RefreshCw, Undo2, Redo2, PanelRightOpen, Users, Calendar as CalendarIcon, FileSpreadsheet, ChevronLeft, ChevronRight
+  ArrowLeft, Cpu, ShieldAlert, CheckCircle2, RefreshCw, Undo2, Redo2, PanelRightOpen, Users, Calendar as CalendarIcon, FileSpreadsheet, ChevronLeft, ChevronRight, Activity
 } from 'lucide-react';
 import { ScheduleStatus } from '../../types';
 import { StatusBadge } from '../Common/StatusBadge';
@@ -22,6 +22,7 @@ interface EditorToolbarProps {
   onPublish: () => void;
   onToggleConflictPanel: () => void;
   onToggleWorkerDrawer: () => void;
+  onToggleDiagnosticsPanel?: () => void;
   isSolving: boolean;
   conflictCount: number;
 }
@@ -42,6 +43,7 @@ export const EditorToolbar: React.FC<EditorToolbarProps> = React.memo(({
   onPublish,
   onToggleConflictPanel,
   onToggleWorkerDrawer,
+  onToggleDiagnosticsPanel,
   isSolving,
   conflictCount,
 }) => {
@@ -166,6 +168,18 @@ export const EditorToolbar: React.FC<EditorToolbarProps> = React.memo(({
           {t('conflicts')} ({conflictCount})
           <PanelRightOpen className="w-4 h-4 ml-1 opacity-60" />
         </button>
+
+        {/* Solver Diagnostics & Explainability */}
+        {onToggleDiagnosticsPanel && (
+          <button
+            onClick={onToggleDiagnosticsPanel}
+            className="inline-flex items-center gap-2 px-3 py-2 bg-indigo-950/60 hover:bg-indigo-900/80 border border-indigo-800/80 text-indigo-300 text-sm font-medium rounded-lg transition-colors shadow-sm"
+            title="Open Solver Explainability & Diagnostics"
+          >
+            <Activity className="w-4 h-4 text-indigo-400" />
+            Diagnostics
+          </button>
+        )}
 
         {/* Auto-Solve */}
         {status === 'DRAFT' && (

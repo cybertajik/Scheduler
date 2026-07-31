@@ -90,10 +90,14 @@ class ScheduleSolverService:
             runtime_seconds=runtime
         )
 
+        from datetime import datetime
+        diag_summary = result.comprehensive_diagnostics.get("failed_diagnostics", {}).get("summary") if (result.comprehensive_diagnostics and result.comprehensive_diagnostics.get("failed_diagnostics")) else f"Assigned {result.total_shifts_assigned}/{result.total_shifts_required} shifts"
+
         logger.info(
-            f"CP-SAT Solver completed in {runtime:.2f}s. "
-            f"Status: {result.status}, Assigned: {result.total_shifts_assigned}/{result.total_shifts_required}, "
-            f"Score: {result.objective_score}"
+            f"[SOLVER_RUN] Timestamp={datetime.utcnow().isoformat()} "
+            f"Runtime={runtime:.3f}s Objective={result.objective_score} "
+            f"Status={result.status} Success={result.is_solved} "
+            f"Summary=\"{diag_summary}\""
         )
 
         return result
