@@ -15,5 +15,5 @@
   Ensure Redis container `scheduler_redis` is running on port 6379.
 
 ### 3. OR-Tools Solver Returns `INFEASIBLE`
-* **Symptom**: Schedule generation returns score message `Schedule infeasible: Not enough workers available`.
-* **Fix**: Navigate to **Workers Management** page and verify active headcount $\ge$ sum of required workers per shift. Inspect active worker vacations on **Rules & Constraints** page.
+* **Symptom**: Schedule generation returns score message `Schedule infeasible: Not enough employees available`.
+* **Fix**: Navigate to **Employees Management** page and verify active headcount $\ge$ sum of required employees per shift. Inspect active employee vacations on **Rules & Constraints** page.
